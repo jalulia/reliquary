@@ -1904,7 +1904,25 @@ function getDillaOffset(step){
 
 // ══════ SEQUENCER ══════
 function startSequencer(){if(timerID)return;nextStepTime=AC.ctx.currentTime+0.05;stepIndex=0;tick();}
-function tick(){try{while(nextStepTime<AC.ctx.currentTime+SCHEDULE_AHEAD){scheduleStep(stepIndex,nextStepTime);nextStepTime+=STEP_DUR;stepIndex=(stepIndex+1)%16;}}catch(e){console.error('tick error:',e.message);}timerID=setTimeout(tick,TICK_MS);}
+function tick(){
+  // Resume AudioContext if suspended (mobile browsers, tab backgrounding)
+  if(AC.ctx&&AC.ctx.state==='suspended')AC.ctx.resume();
+  try{
+    while(nextStepTime<AC.ctx.currentTime+SCHEDULE_AHEAD){
+      scheduleStep(stepIndex,nextStepTime);nextStepTime+=STEP_DUR;stepIndex=(stepIndex+1)%16;
+    }
+    // If clock drifted too far behind (tab was backgrounded), resync
+    if(AC.ctx.currentTime-nextStepTime>1.0){nextStepTime=AC.ctx.currentTime+0.05;}
+  }catch(e){console.error('tick error:',e.message);}
+  timerID=setTimeout(tick,TICK_MS);
+}
+// Watchdog: restart sequencer if it dies while voices exist
+setInterval(()=>{
+  if(Object.keys(VOICES).length>0&&!timerID){
+    console.warn('Sequencer watchdog: restarting');
+    startSequencer();
+  }
+},2000);
 
 function scheduleStep(step,time){
   let t=time;
@@ -3360,7 +3378,7 @@ function playRelicPreview(relic,saint){
 
 // ══════ COMPLETION ══════
 function triggerCompletion(){
-  // Set completion color to current saint's color — each Translatio is unique
+  console.log('COMPLETION: voices='+Object.keys(VOICES).length+' timerID='+timerID+' masterGain='+AC.master.gain.value.toFixed(3)+' ctx.state='+AC.ctx.state);
   const cs=SAINTS[currentSaintIdx];
   if(cs)document.documentElement.style.setProperty('--completion-color',cs.color);
   document.querySelectorAll('#body-svg path,#body-svg line,#body-svg circle,#body-svg ellipse').forEach(el=>el.classList.add('gold-stroke'));
