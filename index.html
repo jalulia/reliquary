@@ -2509,12 +2509,17 @@ function synthJoseph(c,v,t,dur,hz,vel,acc,slide,step){
     e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.8);
     o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+dur+0.02);
   }else if(rid==='shimmer'){
-    const o=c.createOscillator();o.type='sine';o.frequency.value=hz;
-    const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=5.5;
-    const lg=c.createGain();lg.gain.value=0.35;
-    const e=c.createGain();e.gain.setValueAtTime(vel*0.2,t);e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
-    lfo.connect(lg);lg.connect(e.gain);
-    o.connect(e);e.connect(_out(v));o.start(t);lfo.start(t);o.stop(t+dur*2);lfo.stop(t+dur*2);
+    // Ocvlvs — eyes rolled back: dreamy detuned triangles with gentle phase drift
+    [-8,0,8].forEach(det=>{
+      const o=c.createOscillator();o.type='triangle';o.frequency.value=hz*2;o.detune.value=det;
+      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.3+Math.random()*0.2;
+      const lg=c.createGain();lg.gain.value=6;lfo.connect(lg);lg.connect(o.detune);
+      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*4;lp.Q.value=0.5;
+      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.08,t+0.06);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
+      o.connect(lp);lp.connect(e);e.connect(_out(v));o.start(t);lfo.start(t);
+      o.stop(t+dur*2.1);lfo.stop(t+dur*2.1);
+    });
   }else if(rid==='vocal'){
     // Ecstatic vocal: dual formant, sustaining, with vibrato
     const o=c.createOscillator();o.type='sawtooth';o.frequency.value=humanize(hz,0.01);
@@ -3618,7 +3623,7 @@ function moveGhost(x,y){const gh=document.getElementById('drag-ghost');const off
 function onDragMove(ev){
   ev.preventDefault();moveGhost(ev.clientX,ev.clientY);
   if(slotDragStart){const dx=ev.clientX-slotDragStart.x,dy=ev.clientY-slotDragStart.y;if(dx*dx+dy*dy>64)slotDragStart.moved=true;}
-  // Proximity audition — fade audition gain based on distance to nearest slot
+  // Proximity audition — smooth fade based on distance to nearest slot
   if(auditionVoice&&AC.auditionGain){
     let minDist=Infinity;
     document.querySelectorAll('.slot').forEach(sl=>{
@@ -3628,8 +3633,13 @@ function onDragMove(ev){
       if(d<minDist)minDist=d;
       sl.classList.toggle('dragover',d<40);
     });
-    const gain=minDist<30?0.35:minDist>250?0:0.35*(1-minDist/250);
-    AC.auditionGain.gain.setTargetAtTime(gain,AC.ctx.currentTime,0.04);
+    const gain=minDist<50?0.3:minDist>200?0:0.3*(1-(minDist-50)/150);
+    // Only update if gain changed meaningfully — prevents jitter
+    const cur=AC.auditionGain.gain.value;
+    if(Math.abs(gain-cur)>0.02){
+      AC.auditionGain.gain.cancelScheduledValues(AC.ctx.currentTime);
+      AC.auditionGain.gain.setTargetAtTime(gain,AC.ctx.currentTime,0.15);// slower smoothing
+    }
   } else {
     document.querySelectorAll('.slot').forEach(sl=>{
       const r=sl.getBoundingClientRect();
