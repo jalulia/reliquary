@@ -2971,27 +2971,26 @@ function synthLiber(ctx,out){
   // Gregorian chant: deeper, eerier, louder. Two voice groups (low drone + high melody)
   // Low voices: fundamentals at ~80-110 Hz (basso profondo), high: ~180-220 Hz (tenor)
   const voices=[
-    {hz:82,formants:[300,700,2200],gain:0.022},  // basso 1
-    {hz:88,formants:[350,750,2300],gain:0.020},  // basso 2 (beating)
-    {hz:110,formants:[400,1000,2500],gain:0.018}, // baritone
-    {hz:165,formants:[500,1200,2800],gain:0.015}, // tenor 1
-    {hz:172,formants:[480,1150,2700],gain:0.014}, // tenor 2 (beating)
-    {hz:220,formants:[600,1400,3200],gain:0.010}, // alto (ghost octave)
+    {hz:82,formants:[300,700,2200],gain:0.18},   // basso 1
+    {hz:88,formants:[350,750,2300],gain:0.16},   // basso 2 (beating)
+    {hz:110,formants:[400,1000,2500],gain:0.14},  // baritone
+    {hz:165,formants:[500,1200,2800],gain:0.12},  // tenor 1
+    {hz:172,formants:[480,1150,2700],gain:0.11},  // tenor 2 (beating)
+    {hz:220,formants:[600,1400,3200],gain:0.08},  // alto (ghost octave)
   ];
   const oscs=[];const gains=[];
   voices.forEach(v=>{
-    // Each voice: detuned saw through 3 formant filters mixed together
     const o=ctx.createOscillator();o.type='sawtooth';
     o.frequency.value=v.hz;o.detune.value=(Math.random()-0.5)*12;
     const mix=ctx.createGain();mix.gain.value=v.gain;
     v.formants.forEach(ff=>{
-      const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=ff;f.Q.value=8;
+      const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=ff;f.Q.value=3;
       o.connect(f);f.connect(mix);
     });
-    // Syllabic AM — slow breathing rhythm, each voice slightly different rate
+    // Syllabic AM — slow breathing rhythm
     const amLfo=ctx.createOscillator();amLfo.type='sine';
-    amLfo.frequency.value=0.8+Math.random()*0.6;// slower, more phrase-like
-    const amG=ctx.createGain();amG.gain.value=v.gain*0.4;
+    amLfo.frequency.value=0.8+Math.random()*0.6;
+    const amG=ctx.createGain();amG.gain.value=v.gain*0.35;
     amLfo.connect(amG);amG.connect(mix.gain);
     mix.connect(out);o.start();amLfo.start();
     oscs.push(o,amLfo);gains.push(mix);
