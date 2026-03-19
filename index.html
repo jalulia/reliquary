@@ -2247,37 +2247,133 @@ function synthDenis(c,v,t,dur,hz,vel,acc,slide,step){
 }
 
 function synthLucy(c,v,t,dur,hz,vel,acc,slide,step){
-  const rid=v.relic.role;
+  const o=_out(v),rid=v.relic.role;
   if(rid==='snare'){
-    makeNoise(c,_out(v),t,vel,0.022,null,1500);
-    const o=c.createOscillator();o.type='sine';o.frequency.value=hz*1.5;
-    const e=c.createGain();e.gain.setValueAtTime(vel*0.22,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.018);
-    o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+0.02);
-  }else if(rid==='pad'||rid==='melody'||rid==='swell'){
-    makeSolina(c,_out(v),t,hz,vel,dur,null);
+    // Patella — the plate: ghostly rimshot, soft and distant, barely there
+    const bl=Math.floor(c.sampleRate*0.04);
+    const buf=c.createBuffer(1,bl,c.sampleRate);const d=buf.getChannelData(0);
+    for(let i=0;i<bl;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bl,2.5);
+    const src=c.createBufferSource();src.buffer=buf;
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2200;bp.Q.value=2;
+    const e=c.createGain();e.gain.setValueAtTime(vel*0.18,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.06);
+    src.connect(bp);bp.connect(e);e.connect(o);src.start(t);
+  }else if(rid==='pad'){
+    // Lvx — divine light: massive Juno-60 pad, 6 detuned saws with slow chorus LFO
+    // This is the enveloping warmth — the air in Eyes Without a Face
+    const voices=[hz,hz*1.5,hz*2];// root, fifth, octave
+    voices.forEach((n,vi)=>{
+      const o1=c.createOscillator();o1.type='sawtooth';o1.frequency.value=n;o1.detune.value=-8;
+      const o2=c.createOscillator();o2.type='sawtooth';o2.frequency.value=n;o2.detune.value=8;
+      // Slow chorus: each voice pair drifts independently
+      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.15+vi*0.08;
+      const lg=c.createGain();lg.gain.value=6;lfo.connect(lg);lg.connect(o1.detune);lg.connect(o2.detune);
+      const lp=c.createBiquadFilter();lp.type='lowpass';
+      lp.frequency.setValueAtTime(n*2,t);
+      lp.frequency.setTargetAtTime(n*4,t,dur*1.5);// slow filter bloom
+      lp.Q.value=0.4;
+      const e=c.createGain();e.gain.setValueAtTime(0,t);
+      e.gain.linearRampToValueAtTime(vel*0.09,t+0.25);// very slow attack
+      e.gain.setTargetAtTime(vel*0.06,t+0.25,dur*0.8);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*3);
+      o1.connect(lp);o2.connect(lp);lp.connect(e);e.connect(o);
+      o1.start(t);o2.start(t);lfo.start(t);
+      o1.stop(t+dur*3.2);o2.stop(t+dur*3.2);lfo.stop(t+dur*3.2);
+    });
+  }else if(rid==='melody'){
+    // Lacrimae — tears: weeping Solina with formant sweep, the vocal cry
+    // This should sound like someone sobbing through a synthesizer
+    const saws=[-12,-4,0,4,12];
+    const formant1=c.createBiquadFilter();formant1.type='bandpass';formant1.Q.value=5;
+    // Formant sweep: "ah" (800Hz) → "oh" (450Hz) — the sound of a mouth opening then closing in grief
+    formant1.frequency.setValueAtTime(800,t);
+    formant1.frequency.exponentialRampToValueAtTime(450,t+dur*1.2);
+    const formant2=c.createBiquadFilter();formant2.type='bandpass';
+    formant2.frequency.setValueAtTime(2600,t);
+    formant2.frequency.exponentialRampToValueAtTime(1800,t+dur*1.2);
+    formant2.Q.value=3;
+    const mix=c.createGain();mix.gain.value=1;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.14,t+0.06);
+    e.gain.setTargetAtTime(vel*0.08,t+0.06,dur*0.5);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
+    saws.forEach(det=>{
+      const s=c.createOscillator();s.type='sawtooth';s.frequency.value=hz;s.detune.value=det;
+      s.connect(formant1);s.connect(formant2);s.start(t);s.stop(t+dur*2);
+    });
+    formant1.connect(mix);formant2.connect(mix);mix.connect(e);e.connect(o);
+  }else if(rid==='swell'){
+    // Corona — crown of light: slow-building shimmer that blooms from nothing
+    const notes=[hz,hz*1.26,hz*1.5,hz*1.875];// Eb maj7
+    notes.forEach((n,i)=>{
+      const o1=c.createOscillator();o1.type='sine';o1.frequency.value=n;
+      const o2=c.createOscillator();o2.type='triangle';o2.frequency.value=n;o2.detune.value=3;
+      const e=c.createGain();e.gain.setValueAtTime(0,t);
+      // Staggered bloom — each note fades in at a different rate
+      e.gain.linearRampToValueAtTime(vel*0.08,t+0.15+i*0.08);
+      e.gain.setTargetAtTime(vel*0.05,t+0.3,dur);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*3.5);
+      o1.connect(e);o2.connect(e);e.connect(o);
+      o1.start(t);o2.start(t);o1.stop(t+dur*3.6);o2.stop(t+dur*3.6);
+    });
   }else if(rid==='phaser'){
-    const detunes=[-5,0,5];
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*5;lp.Q.value=1.2;
-    const ap=c.createBiquadFilter();ap.type='allpass';ap.frequency.value=800;ap.Q.value=0.5;
-    const pLfo=c.createOscillator();pLfo.type='sine';pLfo.frequency.value=0.3;
-    const plg=c.createGain();plg.gain.value=550;pLfo.connect(plg);plg.connect(ap.frequency);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.32,t+0.10);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
-    detunes.forEach(d=>{const o=c.createOscillator();o.type='sawtooth';o.frequency.value=hz;o.detune.value=d;o.connect(lp);o.start(t);o.stop(t+dur*1.6);});
-    lp.connect(ap);ap.connect(e);e.connect(_out(v));pLfo.start(t);pLfo.stop(t+dur*1.6);
+    // Ocvlvs — the gouged eyes: phased saws with very slow sweep, disoriented vision
+    const saws=[-7,0,7];
+    const ap1=c.createBiquadFilter();ap1.type='allpass';ap1.frequency.value=600;ap1.Q.value=0.7;
+    const ap2=c.createBiquadFilter();ap2.type='allpass';ap2.frequency.value=1200;ap2.Q.value=0.7;
+    const pLfo=c.createOscillator();pLfo.type='sine';pLfo.frequency.value=0.12;// very slow
+    const plg1=c.createGain();plg1.gain.value=400;
+    const plg2=c.createGain();plg2.gain.value=600;
+    pLfo.connect(plg1);plg1.connect(ap1.frequency);
+    pLfo.connect(plg2);plg2.connect(ap2.frequency);
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*6;lp.Q.value=1;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.28,t+0.12);
+    e.gain.setTargetAtTime(vel*0.18,t+0.12,dur*0.6);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
+    saws.forEach(d=>{const s=c.createOscillator();s.type='sawtooth';s.frequency.value=hz;s.detune.value=d;s.connect(lp);s.start(t);s.stop(t+dur*2.1);});
+    lp.connect(ap1);ap1.connect(ap2);ap2.connect(e);e.connect(o);pLfo.start(t);pLfo.stop(t+dur*2.1);
   }else if(rid==='chord'){
-    makeSolina(c,_out(v),t,hz,vel,dur,[hz,hz*1.26,hz*1.5]);
+    // Manvs — hands: chorus-drenched minor chord stabs, Steve Stevens clean guitar character
+    const chord=[hz,hz*1.189,hz*1.5];// root, minor third, fifth
+    chord.forEach(n=>{
+      const o1=c.createOscillator();o1.type='triangle';o1.frequency.value=n;o1.detune.value=-6;
+      const o2=c.createOscillator();o2.type='triangle';o2.frequency.value=n;o2.detune.value=6;
+      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.8+Math.random()*0.4;
+      const lg=c.createGain();lg.gain.value=5;lfo.connect(lg);lg.connect(o1.detune);lg.connect(o2.detune);
+      const e=c.createGain();e.gain.setValueAtTime(0,t);
+      e.gain.linearRampToValueAtTime(vel*0.12,t+0.008);
+      e.gain.setTargetAtTime(vel*0.06,t+0.008,dur*0.5);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
+      o1.connect(e);o2.connect(e);e.connect(o);
+      o1.start(t);o2.start(t);lfo.start(t);
+      o1.stop(t+dur*2);o2.stop(t+dur*2);lfo.stop(t+dur*2);
+    });
   }else if(rid==='drone'){
-    makeSaw(c,_out(v),t,hz,vel*0.5,dur*3,hz*3,1,0);
+    // Vmbra — shadow: the vastness of nothing. Sub-bass drone with beating frequencies
+    const sub1=c.createOscillator();sub1.type='sine';sub1.frequency.value=hz*0.5;
+    const sub2=c.createOscillator();sub2.type='sine';sub2.frequency.value=hz*0.5+0.3;// 0.3Hz beat frequency
+    const sub3=c.createOscillator();sub3.type='sine';sub3.frequency.value=hz*0.25;// sub-sub octave
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz;lp.Q.value=2;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.35,t+0.3);// slow fade in
+    e.gain.setTargetAtTime(vel*0.25,t+0.3,dur);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*4);
+    sub1.connect(lp);sub2.connect(lp);sub3.connect(lp);lp.connect(e);e.connect(o);
+    sub1.start(t);sub2.start(t);sub3.start(t);
+    sub1.stop(t+dur*4.1);sub2.stop(t+dur*4.1);sub3.stop(t+dur*4.1);
   }else if(rid==='tremolo'){
-    const o=c.createOscillator();o.type='sine';o.frequency.value=hz;
-    const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=4.5;
-    const lg=c.createGain();lg.gain.value=0.4;
-    const e=c.createGain();e.gain.setValueAtTime(vel*0.28,t);e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
+    // Flamma — candlelight: high sine with slow AM tremolo, flickering in darkness
+    const s=c.createOscillator();s.type='sine';s.frequency.value=hz*2;
+    const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=2.2;// gentle flicker, not strobe
+    const lg=c.createGain();lg.gain.value=0.35;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.15,t+0.08);
+    e.gain.setTargetAtTime(vel*0.10,t+0.08,dur*0.6);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2.5);
     lfo.connect(lg);lg.connect(e.gain);
-    o.connect(e);e.connect(_out(v));o.start(t);lfo.start(t);o.stop(t+dur*2);lfo.stop(t+dur*2);
+    s.connect(e);e.connect(o);s.start(t);lfo.start(t);s.stop(t+dur*2.6);lfo.stop(t+dur*2.6);
   }else{
-    makeSolina(c,_out(v),t,hz,vel,dur,null);
+    makeSolina(c,o,t,hz,vel,dur,null);
   }
 }
 
@@ -2595,14 +2691,18 @@ const PATTERNS={
     cerebrum_d:[null,null,null,s('G',7,.55),null,null,null,null,null,null,null,s('G',7,.55),null,null,null,null],
   },
   lucy:{
-    ocvlvs:    [s('Eb',0,.6),null,null,null,null,null,null,null,s('Eb',0,.6),null,null,null,null,null,null,null],
-    lvx:       [s('Eb',0,.5),null,null,null,null,null,null,s('Eb',0,.5),null,null,null,null,null,null,null,null],
-    patella:   [null,null,null,null,{hz:K.Eb[0],v:.68,acc:true},null,null,null,null,null,null,null,{hz:K.Eb[0],v:.68,acc:true},null,null,null],
-    lacrimae_l:[s('Eb',6,.52),null,s('Eb',5,.47),null,s('Eb',4,.44),null,s('Eb',3,.42),null,s('Eb',6,.52),null,s('Eb',5,.47),null,s('Eb',4,.44),null,s('Eb',3,.38),null],
-    manvs_l:   [null,null,null,s('Eb',0,.55),null,null,null,null,null,null,null,s('Eb',2,.5),null,null,null,null],
-    corona_l:  [s('Eb',0,.4),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
-    vmbra:     [sb('Eb',0,.45),null,null,null,null,null,null,null,sb('Eb',0,.45),null,null,null,null,null,null,null],
-    flamma_l:  [s('Eb',7,.38),null,null,null,null,null,null,s('Eb',7,.34),null,null,null,null,null,null,null,null],
+    // Eyes Without a Face architecture: vast, spare, longing
+    // lvx=massive pad (one hit per bar, hangs forever), lacrimae=weeping descending line,
+    // vmbra=sub drone (once, sustains), corona=slow bloom, ocvlvs=phased sweep,
+    // patella=ghost rimshot, manvs=minor chord stab, flamma=high flicker
+    ocvlvs:    [s('Eb',0,.55),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+    lvx:       [s('Eb',0,.6),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+    patella:   [null,null,null,null,{hz:K.Eb[0],v:.5},null,null,null,null,null,null,null,{hz:K.Eb[0],v:.42},null,null,null],
+    lacrimae_l:[null,null,s('Eb',6,.55),null,null,null,s('Eb',5,.48),null,null,null,s('Eb',4,.44),null,null,null,s('Eb',3,.4),null],
+    manvs_l:   [null,null,null,null,null,null,null,null,null,null,null,s('Eb',0,.5),null,null,null,null],
+    corona_l:  [s('Eb',0,.42),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+    vmbra:     [sb('Eb',0,.55),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+    flamma_l:  [null,null,null,null,null,null,null,null,null,null,s('Eb',7,.32),null,null,null,null,null],
   },
   joseph:{
     ala:       [s('A',0,.68),null,null,s('A',0,.63),null,s('A',4,.62),null,null,s('A',3,.62),null,null,s('A',0,.58),null,null,null,null],
