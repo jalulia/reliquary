@@ -277,29 +277,24 @@ display:flex;align-items:center;justify-content:center;font-size:1rem;transition
 #wax-seal.stamped{opacity:1;background:var(--cinnabar);border-color:color-mix(in srgb,var(--completion-color) 60%,transparent);box-shadow:0 0 35px rgba(255,69,0,.3),0 0 12px color-mix(in srgb,var(--completion-color) 15%,transparent)}
 #seal-label{font-size:.42rem;letter-spacing:.18em;text-transform:uppercase;color:var(--w20)}
 #cert-text{font-family:'Instrument Serif',serif;font-style:italic;font-size:.55rem;color:var(--w20);text-align:center;line-height:1.6;padding:0 .4em}
-.votive{position:absolute;display:flex;flex-direction:column;align-items:center;gap:.15em;
-cursor:pointer;padding:.3em;border-radius:6px;border:1px solid transparent;
-transition:all .4s ease;opacity:.25;z-index:5;transform:translate(-50%,-50%)}
-.votive-icon{width:48px;height:48px;fill:none;stroke:rgba(218,165,32,.4);stroke-width:.8;
+/* Votive tray — structured row at bottom of reliquary, inside the frame */
+#votive-tray{display:flex;justify-content:space-evenly;align-items:flex-end;
+width:100%;padding:0.3em 1em;gap:0;position:absolute;bottom:0;left:0;z-index:5;
+background:linear-gradient(to top,rgba(10,10,10,.9) 0%,transparent 100%)}
+.votive{display:flex;flex-direction:column;align-items:center;gap:.1em;
+cursor:pointer;padding:.25em .15em;border:none;
+transition:all .4s ease;opacity:.35;flex:1;max-width:56px}
+.votive-icon{width:32px;height:32px;fill:none;stroke:rgba(218,165,32,.45);stroke-width:.8;
 stroke-linecap:round;stroke-linejoin:round;transition:all .4s ease}
-.votive-name{font-size:.22rem;letter-spacing:.16em;text-transform:uppercase;
-color:rgba(218,165,32,.3);transition:color .4s;white-space:nowrap}
-.votive:hover{opacity:.55;transform:translate(-50%,-50%) scale(1.08)}
-.votive:hover .votive-icon{stroke:rgba(218,165,32,.65)}
+.votive-name{font-size:.18rem;letter-spacing:.12em;text-transform:uppercase;
+color:rgba(218,165,32,.25);transition:color .4s;white-space:nowrap}
+.votive:hover{opacity:.6}
+.votive:hover .votive-icon{stroke:rgba(218,165,32,.7)}
 .votive:hover .votive-name{color:rgba(218,165,32,.5)}
-.votive.active{opacity:1;border-color:rgba(218,165,32,.12);background:rgba(218,165,32,.03);
-animation:votivePulse 3s ease-in-out infinite}
-.votive.active .votive-icon{stroke:rgba(218,165,32,.9);filter:drop-shadow(0 0 6px rgba(218,165,32,.35))}
-.votive.active .votive-name{color:rgba(218,165,32,.7)}
+.votive.active{opacity:1}
+.votive.active .votive-icon{stroke:rgba(218,165,32,.95);filter:drop-shadow(0 0 5px rgba(218,165,32,.4))}
+.votive.active .votive-name{color:rgba(218,165,32,.75)}
 @keyframes votivePulse{0%,100%{opacity:.9}50%{opacity:1}}
-.votive[data-id="campana"]{top:2%;left:50%}
-.votive[data-id="lilium"]{top:16%;left:10%}
-.votive[data-id="cereus"]{top:14%;left:90%}
-.votive[data-id="liber"]{top:45%;left:4%}
-.votive[data-id="aqua"]{top:48%;left:96%}
-.votive[data-id="incensum"]{top:76%;left:12%}
-.votive[data-id="calix"]{top:74%;left:88%}
-.votive[data-id="lapis"]{top:93%;left:50%}
 #locus-label{position:absolute;bottom:1%;left:50%;transform:translateX(-50%);
 font-family:'Instrument Serif',serif;font-style:italic;font-size:.45rem;
 color:rgba(218,165,32,0);letter-spacing:.1em;text-align:center;transition:color 2s ease;
@@ -354,10 +349,9 @@ flex-shrink:0;overflow:hidden;touch-action:none}
 .votive{position:static;transform:none;display:inline-flex;padding:.15em}
 .votive:hover{transform:scale(1.05)}
 .votive.active{animation:none}
-.votive-icon{width:20px;height:20px}
-.votive-label{font-size:.25rem}
-#votive-row{display:flex;justify-content:center;gap:.25em;flex-wrap:wrap;
-padding:.2em .3em;position:absolute;bottom:4px;left:0;right:0;z-index:3}
+.votive-icon{width:18px;height:18px}
+.votive-name{font-size:.15rem}
+#votive-tray{padding:0 .3em;gap:0}
 #locus-label{position:static;transform:none;margin-top:.2em;font-size:.5rem}
 #idle-msg{font-size:.5rem}
 #body-title{font-size:.45rem}
@@ -1512,7 +1506,8 @@ padding:.2em .3em;position:absolute;bottom:4px;left:0;right:0;z-index:3}
     <div id="idle-msg"></div>
     <div id="body-title">Reliquary</div>
     <canvas id="visualizer"></canvas>
-    <!-- ═══ VOTIVES — scattered around the ogival frame ═══ -->
+    <!-- ═══ VOTIVES — structured tray at base of reliquary ═══ -->
+    <div id="votive-tray">
     <div class="votive" data-id="campana" title="Campana — bell tower">
       <svg class="votive-icon" viewBox="0 0 48 48">
         <path d="M14,34 Q14,18 24,14 Q34,18 34,34"/>
@@ -1648,6 +1643,7 @@ padding:.2em .3em;position:absolute;bottom:4px;left:0;right:0;z-index:3}
       </svg>
       <span class="votive-name">Lapis</span>
     </div>
+    </div><!-- /votive-tray -->
     <div id="locus-label"></div>
   </div>
   <div id="authenticum">
@@ -1812,7 +1808,7 @@ function initAudio(){
   // Room bus — cathedral convolver, bypasses compressor
   ROOM.ctx=c;ROOM.convolver=buildCathedralConvolver(c);
   ROOM.masterGain=c.createGain();ROOM.masterGain.gain.value=1.0;
-  ROOM.busDry=c.createGain();ROOM.busDry.gain.value=0.08;
+  ROOM.busDry=c.createGain();ROOM.busDry.gain.value=0.28;
   ROOM.busSend=c.createGain();ROOM.busSend.gain.value=0.85;
   ROOM.busWet=c.createGain();ROOM.busWet.gain.value=0.9;
   ROOM.masterGain.connect(ROOM.busDry);ROOM.masterGain.connect(ROOM.busSend);
