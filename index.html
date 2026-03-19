@@ -3334,11 +3334,28 @@ function rippleLoop(){requestAnimationFrame(rippleLoop);for(const[limb,st]of Obj
 
 // ══════ RELIC PREVIEW ══════
 function playRelicPreview(relic,saint){
-  if(!AC.ctx)return;const c=AC.ctx,t=c.currentTime,freq=saint.freq;
-  const o=c.createOscillator();o.type='sine';
-  o.frequency.setValueAtTime(freq*2,t);o.frequency.exponentialRampToValueAtTime(freq,t+0.15);
-  const e=c.createGain();e.gain.setValueAtTime(0.15,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.25);
-  o.connect(e);e.connect(AC.master);o.start(t);o.stop(t+0.3);
+  if(!AC.ctx)return;
+  const synthFn=relic.type==='modifier'?null:SYNTH_FNS[saint.id];
+  if(!synthFn){
+    // Modifiers get a soft confirmation click
+    const c=AC.ctx,t=c.currentTime;
+    const o=c.createOscillator();o.type='sine';o.frequency.value=saint.freq*2;
+    const e=c.createGain();e.gain.setValueAtTime(0.1,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+    o.connect(e);e.connect(AC.master);o.start(t);o.stop(t+0.15);
+    return;
+  }
+  // Build a temporary voice and trigger it with a representative pattern step
+  const c=AC.ctx,t=c.currentTime;
+  const vg=c.createGain();vg.gain.value=0.7;
+  vg.connect(AC.master);
+  if(saint.id!=='bartholomew')vg.connect(AC.reverbSend);
+  const tempVoice={output:vg,pattern:null,synthFn,saint,relic};
+  const hz=saint.freq;
+  const dur=STEP_DUR*0.85;
+  synthFn(c,tempVoice,t,dur,hz,0.7,false,false,0);
+  // Fade out the gain node after 2 seconds to clean up
+  vg.gain.setTargetAtTime(0,t+1.5,0.3);
+  setTimeout(()=>{try{vg.disconnect();}catch(e){}},3000);
 }
 
 // ══════ COMPLETION ══════
