@@ -316,7 +316,7 @@ border:none;opacity:0;transition:opacity .15s;background:transparent;overflow:hi
 #app.active{flex-direction:column;overflow:hidden;height:100vh;height:100dvh}
 
 /* ── Catalogue: compact strip at top ── */
-#catalogue{width:100%;height:auto;max-height:38vh;border-right:none;border-bottom:1px solid var(--w10);
+#catalogue{width:100%;height:auto;max-height:32vh;border-right:none;border-bottom:1px solid var(--w10);
 flex-shrink:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y}
 #cat-header{padding:.4em .6em .2em}
 #cat-header h2{font-size:.8rem}
@@ -328,11 +328,11 @@ flex-shrink:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch
 #saint-name{font-size:.9rem}
 #saint-key{font-size:.45rem;padding:.08em .3em}
 #saint-vibe{font-size:.55rem}
-#relic-cabinet-wrap{padding:.3em .4em;overflow-y:auto;-webkit-overflow-scrolling:touch}
-#relic-cabinet{grid-template-columns:repeat(3,1fr);gap:.3em}
-.cabinet-niche{aspect-ratio:.85;border-radius:3px 3px 1px 1px}
-.cabinet-niche .relic-img{width:70%;height:70%}
-.cabinet-niche .relic-label{font-size:.3rem;letter-spacing:.05em}
+#relic-cabinet-wrap{padding:.2em .3em;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#relic-cabinet{grid-template-columns:repeat(3,1fr);gap:.2em}
+.cabinet-niche{aspect-ratio:1;border-radius:2px;max-width:72px;margin:0 auto}
+.cabinet-niche .relic-img{width:60%;height:60%}
+.cabinet-niche .relic-label{font-size:.25rem;letter-spacing:.04em}
 
 /* ── Reliquary: fills remaining height, NO scroll ── */
 #reliquary-panel{flex:1;min-height:0;overflow:hidden}
