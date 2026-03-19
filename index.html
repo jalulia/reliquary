@@ -2098,21 +2098,25 @@ function synthBarth(c,v,t,dur,hz,vel,acc,slide,step){
     const e=c.createGain();e.gain.setValueAtTime(vel*0.10,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.02);
     ck.connect(bp);bp.connect(e);e.connect(o);ck.start(t);ck.stop(t+0.025);
   }else if(rid==='breath'){
-    // Pulmo — screwed Juno pad: woozy, pitched-down, slow chorus drift
-    const notes=[shz,shz*1.5,shz*2];
-    notes.forEach(n=>{
-      const o1=c.createOscillator();o1.type='sawtooth';o1.frequency.value=n;o1.detune.value=humanize(-10,0.5);
-      const o2=c.createOscillator();o2.type='sawtooth';o2.frequency.value=n;o2.detune.value=humanize(10,0.5);
-      // Woozy chorus — slower LFO, wider detune (screwed character)
-      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.2+Math.random()*0.15;// slower
-      const lg=c.createGain();lg.gain.value=7;// wider wobble
-      lfo.connect(lg);lg.connect(o1.detune);lg.connect(o2.detune);
-      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=n*2.5;lp.Q.value=0.7;
-      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.07,t+0.2);
-      e.gain.setTargetAtTime(vel*0.05,t+0.2,dur);
-      e.gain.exponentialRampToValueAtTime(0.001,t+dur*4);
-      o1.connect(lp);o2.connect(lp);lp.connect(e);e.connect(o);
-      o1.start(t);o2.start(t);lfo.start(t);o1.stop(t+dur*4);o2.stop(t+dur*4);lfo.stop(t+dur*4);
+    // Pulmo — screwed Juno pad: dark, heavy, fills the room like fog
+    // 4 voices: root, 5th, octave, minor 7th — dark minor chord
+    const notes=[shz,shz*1.5,shz*2,shz*1.782];// root, 5th, 8va, m7
+    notes.forEach((n,ni)=>{
+      const o1=c.createOscillator();o1.type='sawtooth';o1.frequency.value=n;o1.detune.value=humanize(-12,0.5);
+      const o2=c.createOscillator();o2.type='sawtooth';o2.frequency.value=n;o2.detune.value=humanize(12,0.5);
+      const o3=c.createOscillator();o3.type='sawtooth';o3.frequency.value=n;o3.detune.value=humanize(0,0.5);
+      // Woozy chorus — seasick drift
+      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.15+ni*0.05;
+      const lg=c.createGain();lg.gain.value=9;
+      lfo.connect(lg);lg.connect(o1.detune);lg.connect(o2.detune);lg.connect(o3.detune);
+      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=n*2;lp.Q.value=0.9;
+      const e=c.createGain();e.gain.setValueAtTime(0,t);
+      e.gain.linearRampToValueAtTime(vel*0.22,t+0.4);// slow swell
+      e.gain.setTargetAtTime(vel*0.16,t+0.4,dur*0.8);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*5);
+      o1.connect(lp);o2.connect(lp);o3.connect(lp);lp.connect(e);e.connect(o);
+      o1.start(t);o2.start(t);o3.start(t);lfo.start(t);
+      o1.stop(t+dur*5);o2.stop(t+dur*5);o3.stop(t+dur*5);lfo.stop(t+dur*5);
     });
   }else if(rid==='lead'){
     // Lingua — screwed Moog bass: slow-motion "bwwwooowww" filter sweep
@@ -2685,7 +2689,7 @@ const PATTERNS={
     musculus: [s('D',0,.42),null,s('D',0,.35),null,s('D',0,.42),null,s('D',0,.35),null,s('D',0,.42),null,s('D',0,.35,1),null,s('D',0,.42),null,s('D',0,.35),null],
     os:       [sb('D',0,.95),null,null,null,sb('D',0,.92),null,null,null,sb('D',0,.95),null,null,null,sb('D',0,.92),null,null,null],
     vena:     [s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12)],
-    pulmo:    [s('D',0,.45),null,null,null,null,null,null,null,s('D',4,.42),null,null,null,null,null,null,null],
+    pulmo:    [s('D',0,.65),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
     lingua:   [s('D',0,.82),s('D',0,.55),null,s('D',6,.7,1),s('D',0,.78),null,s('D',0,.55),null,s('D',3,.8),s('D',3,.55),null,s('D',6,.72,1),s('D',0,.75),null,s('D',0,.5),s('D',0,.42)],
   },
   lawrence:{
