@@ -3552,7 +3552,10 @@ function renderRelicGrid(){
       '<span class="rname">'+r.name+'</span>'+
       '<span class="rtype">'+(r.type==='clock'?'clk':r.type==='modifier'?'mod':'gen')+'</span>';
     niche.title=r.desc;
-    if(!niche.classList.contains('placed'))niche.addEventListener('pointerdown',e=>startDrag(e,r,saint,niche));
+    if(!niche.classList.contains('placed')){
+      niche.addEventListener('pointerdown',e=>startDrag(e,r,saint,niche));
+      niche.addEventListener('click',e=>{if(!AC.ctx){initAudio();startSequencer();}playRelicPreview(r,saint);});
+    }
     cab.appendChild(niche);
   });
 }
@@ -3572,6 +3575,7 @@ function updateAccordionPlacedState(){
         if(r){
           const nc=cell.cloneNode(true);nc.classList.remove('placed');nc.style.pointerEvents='';
           nc.addEventListener('pointerdown',e=>startDrag(e,r,s,nc));
+          nc.addEventListener('click',e=>{if(!AC.ctx){initAudio();startSequencer();}playRelicPreview(r,s);});
           cell.parentNode.replaceChild(nc,cell);
         }
       }
