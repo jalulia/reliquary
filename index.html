@@ -2360,16 +2360,32 @@ function synthLucy(c,v,t,dur,hz,vel,acc,slide,step){
     sub1.start(t);sub2.start(t);sub3.start(t);
     sub1.stop(t+dur*4.1);sub2.stop(t+dur*4.1);sub3.stop(t+dur*4.1);
   }else if(rid==='tremolo'){
-    // Flamma — candlelight: high sine with slow AM tremolo, flickering in darkness
-    const s=c.createOscillator();s.type='sine';s.frequency.value=hz*2;
-    const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=2.2;// gentle flicker, not strobe
-    const lg=c.createGain();lg.gain.value=0.35;
+    // Flamma — the longing vocal: reaching up then resolving down, sadly
+    // Detuned saws through vocal formants, pitch bends up minor 3rd then falls
     const e=c.createGain();e.gain.setValueAtTime(0,t);
-    e.gain.linearRampToValueAtTime(vel*0.15,t+0.08);
-    e.gain.setTargetAtTime(vel*0.10,t+0.08,dur*0.6);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2.5);
-    lfo.connect(lg);lg.connect(e.gain);
-    s.connect(e);e.connect(o);s.start(t);lfo.start(t);s.stop(t+dur*2.6);lfo.stop(t+dur*2.6);
+    e.gain.linearRampToValueAtTime(vel*0.12,t+0.12);
+    e.gain.setTargetAtTime(vel*0.08,t+0.12,dur*0.5);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
+    e.connect(o);
+    // Vibrato LFO — gentle pitch wobble
+    const vib=c.createOscillator();vib.type='sine';vib.frequency.value=5.5;
+    const vg=c.createGain();vg.gain.value=3;// ±3 cents
+    vib.connect(vg);vib.start(t);vib.stop(t+dur*2.2);
+    const startHz=hz;const peakHz=hz*1.189;// minor 3rd
+    [-8,-3,0,3,8].forEach(det=>{
+      const s=c.createOscillator();s.type='sawtooth';s.detune.value=det;
+      s.frequency.setValueAtTime(startHz,t);
+      s.frequency.linearRampToValueAtTime(peakHz,t+dur*0.35);// reach
+      s.frequency.exponentialRampToValueAtTime(startHz,t+dur*1.2);// resolve
+      vg.connect(s.detune);// vibrato on each voice
+      // Formants: "eh" opening to "ah"
+      const f1=c.createBiquadFilter();f1.type='bandpass';f1.Q.value=6;
+      f1.frequency.setValueAtTime(600,t);f1.frequency.linearRampToValueAtTime(800,t+dur*0.8);
+      const f2=c.createBiquadFilter();f2.type='bandpass';f2.Q.value=4;
+      f2.frequency.setValueAtTime(1800,t);f2.frequency.linearRampToValueAtTime(1200,t+dur*0.8);
+      s.connect(f1);s.connect(f2);f1.connect(e);f2.connect(e);
+      s.start(t);s.stop(t+dur*2.2);
+    });
   }else{
     makeSolina(c,o,t,hz,vel,dur,null);
   }
