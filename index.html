@@ -2051,71 +2051,71 @@ function makeBitCrush(c,out,t,hz,vel,dur,asNoise){
 function synthBarth(c,v,t,dur,hz,vel,acc,slide,step){
   const o=_out(v),rid=v.relic.role;
   if(rid==='rhythm'){
-    // Nervus: DMX-style snare — noise burst + pitched tone body
-    const bl=Math.floor(c.sampleRate*0.06);
+    // Nervus — Oberheim DMX snare: tight noise burst + body tone
+    const bl=Math.floor(c.sampleRate*0.09);
     const buf=c.createBuffer(1,bl,c.sampleRate);const d=buf.getChannelData(0);
-    for(let i=0;i<bl;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bl,1.2);
+    for(let i=0;i<bl;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bl,0.6);
     const src=c.createBufferSource();src.buffer=buf;
-    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=2000;hp.Q.value=1;
-    const ne=c.createGain();ne.gain.setValueAtTime(vel*0.42,t);ne.gain.exponentialRampToValueAtTime(0.001,t+0.08);
-    src.connect(hp);hp.connect(ne);ne.connect(o);src.start(t);
-    // Tone body
-    const tn=c.createOscillator();tn.type='sine';tn.frequency.setValueAtTime(220,t);tn.frequency.exponentialRampToValueAtTime(120,t+0.02);
-    const te=c.createGain();te.gain.setValueAtTime(vel*0.35,t);te.gain.exponentialRampToValueAtTime(0.001,t+0.06);
-    tn.connect(te);te.connect(o);tn.start(t);tn.stop(t+0.08);
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=3200;bp.Q.value=1.2;
+    const ne=c.createGain();ne.gain.setValueAtTime(vel*0.52,t);ne.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+    src.connect(bp);bp.connect(ne);ne.connect(o);src.start(t);
+    // Pitched body — triangle at 180Hz, fast decay
+    const tn=c.createOscillator();tn.type='triangle';tn.frequency.setValueAtTime(180,t);tn.frequency.exponentialRampToValueAtTime(100,t+0.015);
+    const te=c.createGain();te.gain.setValueAtTime(vel*0.4,t);te.gain.exponentialRampToValueAtTime(0.001,t+0.04);
+    tn.connect(te);te.connect(o);tn.start(t);tn.stop(t+0.05);
   }else if(rid==='rhythm2'){
-    // Musculus: DMX hi-hat — filtered noise, open on accent
-    const len=acc?0.12:0.03;
-    const bl=Math.floor(c.sampleRate*len);
-    const buf=c.createBuffer(1,bl,c.sampleRate);const d=buf.getChannelData(0);
-    for(let i=0;i<bl;i++)d[i]=(Math.random()*2-1);
-    const src=c.createBufferSource();src.buffer=buf;
-    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=7000;hp.Q.value=1.5;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=12000;
-    const e=c.createGain();e.gain.setValueAtTime(vel*0.32,t);e.gain.exponentialRampToValueAtTime(0.001,t+len);
-    src.connect(hp);hp.connect(lp);lp.connect(e);e.connect(o);src.start(t);
+    // Musculus — crisp electronic hi-hat: 6 detuned square oscillators (Oberheim method)
+    const freqs=[800,1342,2843,3848,5765,8090];
+    const eg=c.createGain();const len=acc?0.18:0.035;
+    eg.gain.setValueAtTime(vel*0.28,t);eg.gain.exponentialRampToValueAtTime(0.001,t+len);
+    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=6500;
+    eg.connect(hp);hp.connect(o);
+    freqs.forEach(f=>{const sq=c.createOscillator();sq.type='square';sq.frequency.value=f;sq.connect(eg);sq.start(t);sq.stop(t+len+0.01);});
   }else if(rid==='kick'){
-    // Os: punchy 808-style kick — sine sweep with click transient
+    // Os — DMX kick: sharp sine pitch drop, tight and punchy
     const k=c.createOscillator();k.type='sine';
-    k.frequency.setValueAtTime(160,t);k.frequency.exponentialRampToValueAtTime(42,t+0.06);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.72,t+0.002);
-    e.gain.exponentialRampToValueAtTime(0.001,t+0.2);
-    k.connect(e);e.connect(o);k.start(t);k.stop(t+0.25);
-    // Click
-    const cl=c.createOscillator();cl.type='square';cl.frequency.value=800;
-    const ce=c.createGain();ce.gain.setValueAtTime(vel*0.25,t);ce.gain.exponentialRampToValueAtTime(0.001,t+0.004);
-    cl.connect(ce);ce.connect(o);cl.start(t);cl.stop(t+0.008);
+    k.frequency.setValueAtTime(150,t);k.frequency.exponentialRampToValueAtTime(38,t+0.045);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.78,t+0.001);
+    e.gain.setTargetAtTime(0.001,t+0.001,0.065);
+    k.connect(e);e.connect(o);k.start(t);k.stop(t+0.2);
+    // Transient click
+    const cl=c.createOscillator();cl.type='square';cl.frequency.value=1200;
+    const ce=c.createGain();ce.gain.setValueAtTime(vel*0.2,t);ce.gain.exponentialRampToValueAtTime(0.001,t+0.003);
+    cl.connect(ce);ce.connect(o);cl.start(t);cl.stop(t+0.006);
   }else if(rid==='clock'){
-    // Vena: driving pulse — synced 16th tick, cold and mechanical
-    const ck=c.createOscillator();ck.type='square';ck.frequency.value=hz*4;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2000;lp.Q.value=2;
-    const e=c.createGain();e.gain.setValueAtTime(vel*0.18,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.015);
-    ck.connect(lp);lp.connect(e);e.connect(o);ck.start(t);ck.stop(t+0.02);
+    // Vena — cold 16th pulse: short filtered square, relentless metronome
+    const ck=c.createOscillator();ck.type='square';ck.frequency.value=hz*6;
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1800;bp.Q.value=3;
+    const e=c.createGain();e.gain.setValueAtTime(vel*0.15,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.012);
+    ck.connect(bp);bp.connect(e);e.connect(o);ck.start(t);ck.stop(t+0.018);
   }else if(rid==='breath'){
-    // Pulmo: synth pad swell — detuned saws, slow attack, Blue Monday wash
-    const o1=c.createOscillator();o1.type='sawtooth';o1.frequency.value=hz;o1.detune.value=-8;
-    const o2=c.createOscillator();o2.type='sawtooth';o2.frequency.value=hz;o2.detune.value=8;
-    const o3=c.createOscillator();o3.type='sawtooth';o3.frequency.value=hz*2;o3.detune.value=3;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=2;
-    lp.frequency.setValueAtTime(hz*6,t);lp.frequency.exponentialRampToValueAtTime(hz*1.5,t+dur*2);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.22,t+0.08);
-    e.gain.setTargetAtTime(vel*0.14,t+0.08,dur*0.8);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*3);
-    o1.connect(lp);o2.connect(lp);o3.connect(lp);lp.connect(e);e.connect(o);
-    o1.start(t);o2.start(t);o3.start(t);o1.stop(t+dur*3);o2.stop(t+dur*3);o3.stop(t+dur*3);
+    // Pulmo — Juno-60 string pad: slow chorus, cold and wide
+    const notes=[hz,hz*1.5,hz*2];
+    notes.forEach(n=>{
+      const o1=c.createOscillator();o1.type='sawtooth';o1.frequency.value=n;o1.detune.value=humanize(-7,0.5);
+      const o2=c.createOscillator();o2.type='sawtooth';o2.frequency.value=n;o2.detune.value=humanize(7,0.5);
+      // Slow chorus LFO per voice
+      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.4+Math.random()*0.3;
+      const lg=c.createGain();lg.gain.value=4;lfo.connect(lg);lg.connect(o1.detune);lg.connect(o2.detune);
+      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=n*3;lp.Q.value=0.5;
+      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.06,t+0.15);
+      e.gain.setTargetAtTime(vel*0.04,t+0.15,dur);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*4);
+      o1.connect(lp);o2.connect(lp);lp.connect(e);e.connect(o);
+      o1.start(t);o2.start(t);lfo.start(t);o1.stop(t+dur*4);o2.stop(t+dur*4);lfo.stop(t+dur*4);
+    });
   }else if(rid==='lead'){
-    // Lingua: pulsing sequencer bass — the iconic Blue Monday synth-bass line
-    const dhz=humanize(hz,0.006);
-    const o1=c.createOscillator();o1.type='sawtooth';o1.frequency.value=dhz;
-    const o2=c.createOscillator();o2.type='square';o2.frequency.value=dhz;o2.detune.value=2;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=acc?12:6;
-    const peakF=acc?hz*8:hz*5;
-    lp.frequency.setValueAtTime(peakF,t);lp.frequency.exponentialRampToValueAtTime(hz*0.8,t+dur*0.6);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.48,t+0.003);
-    e.gain.setTargetAtTime(vel*0.28,t+0.003,dur*0.35);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
-    o1.connect(lp);o2.connect(lp);lp.connect(e);e.connect(o);
-    o1.start(t);o2.start(t);o1.stop(t+dur*1.5);o2.stop(t+dur*1.5);
+    // Lingua — THE bass: single saw, very resonant LP, fast sharp filter snap
+    const saw=c.createOscillator();saw.type='sawtooth';saw.frequency.value=hz;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=18;
+    // The "bwow": filter snaps open then closes fast
+    const peak=hz*(acc?12:8);
+    lp.frequency.setValueAtTime(peak,t);
+    lp.frequency.exponentialRampToValueAtTime(hz*0.7,t+0.12);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.55,t+0.002);
+    e.gain.setTargetAtTime(vel*0.32,t+0.002,dur*0.3);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.2);
+    saw.connect(lp);lp.connect(e);e.connect(o);saw.start(t);saw.stop(t+dur*1.2+0.02);
   }else{
     makeGatedSaw(c,o,t,hz,vel*1.3,hz*2.2,10);
   }
@@ -2542,12 +2542,12 @@ function sb(key,deg,vel,acc,slide){return{hz:(K[key][deg]||K[key][0])*0.5,v:vel|
 
 const PATTERNS={
   bartholomew:{
-    nervus:   [null,null,null,null,s('D',0,.85),null,null,null,null,null,null,null,s('D',0,.8),null,null,null],
-    musculus: [s('D',0,.5),null,s('D',0,.5),null,s('D',0,.5),null,s('D',0,.5),null,s('D',0,.5),null,s('D',0,.5),s('D',0,.35),s('D',0,.5),null,s('D',0,.5,1),s('D',0,.35)],
-    os:       [sb('D',0,.92),null,null,null,sb('D',0,.88),null,null,null,sb('D',0,.92),null,null,null,sb('D',0,.88),null,null,null],
-    vena:     [s('D',0,.22),s('D',0,.16),s('D',0,.22),s('D',0,.16),s('D',0,.22),s('D',0,.16),s('D',0,.22),s('D',0,.16),s('D',0,.22),s('D',0,.16),s('D',0,.22),s('D',0,.16),s('D',0,.22),s('D',0,.16),s('D',0,.22),s('D',0,.16)],
-    pulmo:    [s('D',0,.55),null,null,null,null,null,null,null,s('D',4,.5),null,null,null,null,null,null,null],
-    lingua:   [s('D',0,.7),null,null,s('D',0,.6),null,null,s('D',4,.65),null,s('D',0,.7),null,null,s('D',7,.6,1),null,s('D',4,.55),null,null],
+    nervus:   [null,null,null,null,s('D',0,.88),null,null,null,null,null,null,null,s('D',0,.85),null,s('D',0,.55),null],
+    musculus: [s('D',0,.5),null,s('D',0,.45),null,s('D',0,.5),null,s('D',0,.45),null,s('D',0,.5),null,s('D',0,.45,1),null,s('D',0,.5),null,s('D',0,.45),null],
+    os:       [sb('D',0,.95),null,null,null,sb('D',0,.9),null,null,null,sb('D',0,.95),null,null,null,sb('D',0,.9),null,null,null],
+    vena:     [s('D',0,.2),s('D',0,.14),s('D',0,.2),s('D',0,.14),s('D',0,.2),s('D',0,.14),s('D',0,.2),s('D',0,.14),s('D',0,.2),s('D',0,.14),s('D',0,.2),s('D',0,.14),s('D',0,.2),s('D',0,.14),s('D',0,.2),s('D',0,.14)],
+    pulmo:    [s('D',0,.5),null,null,null,null,null,null,null,s('D',4,.48),null,null,null,null,null,null,null],
+    lingua:   [s('D',0,.75),null,s('D',0,.65),null,s('D',3,.7),null,s('D',3,.6),null,s('D',5,.72),null,s('D',5,.62),null,s('D',3,.68,1),null,s('D',0,.6),null],
   },
   lawrence:{
     costa:    [s('F',0,.8),null,null,null,s('F',0,.8),null,null,null,s('F',0,.75),null,null,null,s('F',0,.8),null,null,null],
