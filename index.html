@@ -3150,7 +3150,7 @@ function renderRelicGrid(){
     const niche=document.createElement('div');niche.className='cabinet-niche';
     niche.dataset.relicId=r.id;
     if(slots.some(s=>s&&s.relic.id===r.id))niche.classList.add('placed');
-    const imgPath='../Relic%20Assets/'+RELIC_IMGS[(si+ri)%RELIC_IMGS.length];
+    const imgPath='assets/'+RELIC_IMGS[(si+ri)%RELIC_IMGS.length];
     niche.innerHTML='<img class="relic-img" src="'+imgPath+'" alt="" draggable="false">'+
       '<span class="rname">'+r.name+'</span>'+
       '<span class="rtype">'+(r.type==='clock'?'clk':r.type==='modifier'?'mod':'gen')+'</span>';
@@ -3194,7 +3194,7 @@ function renderSlots(){
     if(slots[i]){
       sl.style.setProperty('--slot-color',slots[i].saint.color);
       const si=SAINTS.indexOf(slots[i].saint);const ri2=slots[i].saint.relics.indexOf(slots[i].relic);
-      const slotImg='../Relic%20Assets/'+RELIC_IMGS[(si+ri2)%RELIC_IMGS.length];
+      const slotImg='assets/'+RELIC_IMGS[(si+ri2)%RELIC_IMGS.length];
       sl.innerHTML='<img class="slot-relic-img" src="'+slotImg+'" alt=""><span class="slot-name" style="color:'+slots[i].saint.color+'">'+slots[i].relic.name+'</span>';
       sl.addEventListener('pointerdown',e=>{if(!dragging)startSlotDrag(e,i);});
     }else{
@@ -3238,7 +3238,7 @@ function startDrag(ev,relic,saint,el){
   el.classList.add('dragging');
   const gh=document.getElementById('drag-ghost');
   const dsi=SAINTS.indexOf(saint),dri=saint.relics.indexOf(relic);
-  gh.innerHTML='<img src="../Relic%20Assets/'+RELIC_IMGS[(dsi+dri)%RELIC_IMGS.length]+'" style="width:100%;height:100%;object-fit:contain;filter:brightness(1.3) drop-shadow(0 0 8px '+saint.color+')">';
+  gh.innerHTML='<img src="assets/'+RELIC_IMGS[(dsi+dri)%RELIC_IMGS.length]+'" style="width:100%;height:100%;object-fit:contain;filter:brightness(1.3) drop-shadow(0 0 8px '+saint.color+')">';
   gh.classList.add('active');
   moveGhost(ev.clientX,ev.clientY);el.style.opacity='0.3';
   // Build audition voice
@@ -3253,7 +3253,7 @@ function startSlotDrag(ev,slotIdx){
   dragging={relic:s.relic,saint:s.saint,el:null,fromSlot:slotIdx};dragFromSlot=slotIdx;
   const gh=document.getElementById('drag-ghost');
   const dsi2=SAINTS.indexOf(s.saint),dri2=s.saint.relics.indexOf(s.relic);
-  gh.innerHTML='<img src="../Relic%20Assets/'+RELIC_IMGS[(dsi2+dri2)%RELIC_IMGS.length]+'" style="width:100%;height:100%;object-fit:contain;filter:brightness(1.3) drop-shadow(0 0 8px '+s.saint.color+')">';
+  gh.innerHTML='<img src="assets/'+RELIC_IMGS[(dsi2+dri2)%RELIC_IMGS.length]+'" style="width:100%;height:100%;object-fit:contain;filter:brightness(1.3) drop-shadow(0 0 8px '+s.saint.color+')">';
   gh.classList.add('active');
   moveGhost(ev.clientX,ev.clientY);resetIdleTimer();
   document.addEventListener('pointermove',onDragMove);document.addEventListener('pointerup',onDragEnd);
