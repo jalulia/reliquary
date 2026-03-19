@@ -2541,22 +2541,32 @@ function synthAnth(c,v,t,dur,hz,vel,acc,slide,step){
   }else if(rid==='bass'){
     makeSlap(c,_out(v),t,hz,vel);
   }else if(rid==='bell'){
-    // Velocity-responsive bell: brighter and shorter at high vel, warmer and longer at low vel
-    const mr=3.5+vel*1.5+humanize(0,0.3);  // modRatio 3.5-5.0
-    const bd=0.6-vel*0.35;  // duration 0.6s at low vel, 0.25s at high vel
-    const dhz=hz*humanize(1,0.015);  // ±0.75% pitch variation
-    const car=c.createOscillator();car.type='sine';car.frequency.value=dhz;
-    const mod=c.createOscillator();mod.type='sine';mod.frequency.value=dhz*mr;
-    const mg=c.createGain();mg.gain.setValueAtTime(dhz*(2+vel*2),t);mg.gain.exponentialRampToValueAtTime(dhz*0.05,t+bd);
-    mod.connect(mg);mg.connect(car.frequency);
-    // Second inharmonic partial for shimmer
-    const car2=c.createOscillator();car2.type='sine';car2.frequency.value=dhz*mr*0.71;
-    const e2=c.createGain();e2.gain.setValueAtTime(0,t);e2.gain.linearRampToValueAtTime(vel*0.12,t+0.01);
-    e2.gain.exponentialRampToValueAtTime(0.001,t+bd*1.5);
-    car2.connect(e2);e2.connect(_out(v));car2.start(t);car2.stop(t+bd*1.5+0.05);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.38,t+0.004);
-    e.gain.exponentialRampToValueAtTime(0.001,t+bd);
-    car.connect(e);e.connect(_out(v));mod.start(t);car.start(t);mod.stop(t+bd+0.05);car.stop(t+bd+0.05);
+    // Campana — distant bronze bell: multiple inharmonic partials with long decay
+    // Real bells have partials at non-integer ratios. Each partial decays independently.
+    // The strike tone fades fast, the hum tone lingers.
+    const dhz=hz*0.5*humanize(1,0.01);// lower fundamental — this is a big bell
+    const partials=[
+      {ratio:0.5,amp:0.18,decay:2.5},  // hum — lowest, longest
+      {ratio:1.0,amp:0.25,decay:1.8},  // prime — the "note"
+      {ratio:1.183,amp:0.12,decay:1.2}, // tierce (minor 3rd)
+      {ratio:1.506,amp:0.10,decay:1.0}, // quint (5th)
+      {ratio:2.0,amp:0.08,decay:0.6},  // nominal (octave)
+      {ratio:2.514,amp:0.04,decay:0.4}, // high partial
+    ];
+    // Lowpass to soften — heard through stone walls
+    const lp=c.createBiquadFilter();lp.type='lowpass';
+    lp.frequency.setValueAtTime(1200+vel*800,t);
+    lp.frequency.exponentialRampToValueAtTime(400,t+2.0);// filter closes slowly
+    lp.Q.value=0.5;
+    lp.connect(_out(v));
+    partials.forEach(p=>{
+      const o=c.createOscillator();o.type='sine';o.frequency.value=dhz*p.ratio;
+      o.detune.value=humanize(0,2);// slight detuning per partial
+      const e=c.createGain();e.gain.setValueAtTime(0,t);
+      e.gain.linearRampToValueAtTime(vel*p.amp,t+0.003+Math.random()*0.004);
+      e.gain.exponentialRampToValueAtTime(0.001,t+p.decay);
+      o.connect(e);e.connect(lp);o.start(t);o.stop(t+p.decay+0.05);
+    });
   }else if(rid==='kick'){
     makeSub(c,_out(v),t,hz,vel,dur);
   }else if(rid==='sweep'){
@@ -2765,7 +2775,7 @@ const PATTERNS={
     daemon:    Array(16).fill(null).map((_,i)=>({hz:K.E[0],v:0.28})),
     desertvm:  [s('E',0,.48),null,null,null,null,null,null,s('E',0,.48),null,null,null,null,null,null,null,null],
     bacvlvs:   [sb('E',0,.78),null,null,sb('E',0,.72),null,sb('E',0,.72),null,null,sb('E',0,.72),null,null,sb('E',0,.72),null,null,sb('E',0,.72),null],
-    campana:   [null,s('E',4,.52),null,null,null,null,null,s('E',4,.48),null,null,null,null,s('E',7,.44),null,null,null],
+    campana:   [null,null,null,null,null,null,null,null,s('E',0,.55),null,null,null,null,null,null,null],
     cor_a:     [sb('E',0,.75,1),null,null,null,null,null,null,null,sb('E',0,.75,1),null,null,null,null,null,null,null],
     bestia:    [null,null,null,null,s('E',0,.55),null,null,null,null,null,null,s('E',0,.55),null,null,null,null],
     crvx:      [sb('E',0,.42),null,null,null,null,null,null,null,sb('E',0,.42),null,null,null,null,null,null,null],
