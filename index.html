@@ -1670,7 +1670,7 @@ const RELIC_IMGS=['saint-relic-example.png','saint-relic-example1.png','saint-re
 'saint-relic-example15.png','saint-relic-example16.png','saint-relic-example17.png','saint-relic-example18.png',
 'saint-relic-example19.png','saint-relic-example20.png','saint-relic-example21.png','saint-relic-example22.png',
 'saint-relic-example23.png','saint-relic-example24.png','saint-relic-example25.png',
-'saint-relic-example14.png','saint-relic-example26.png','saint-relic-example27.png','saint-relic-example28.png'];
+'saint-relic-example29.png','saint-relic-example26.png','saint-relic-example27.png','saint-relic-example28.png'];
 
 const SAINTS=[
 {id:'bartholomew',name:'Bartholomew',key:'D',freq:146.83,color:'#FF4500',vibe:'Flayed alive',vibeTag:'punk',imgIdx:0,noReverb:true,relics:[
@@ -1952,12 +1952,14 @@ function scheduleStep(step,time){
   let t=time;
   if(SWING.active&&step%2===1)t+=STEP_DUR*SWING.amount*0.38;
   for(const[,v]of Object.entries(VOICES)){
-    const sd=v.pattern&&v.pattern[step];if(!sd)continue;
+    if(!v||!v.pattern)continue;
+    const sd=v.pattern[step];if(!sd)continue;
     let vt=t;
-    if(v.saint.id==='symeon')vt+=getDillaOffset(step);
-    // Bartholomew drag: non-kick voices land 20-35ms behind the beat (screwed feel)
-    if(v.saint.id==='bartholomew'&&v.relic.role!=='kick')vt+=0.020+Math.random()*0.015;
-    triggerVoice(v,vt,step,sd);
+    try{
+      if(v.saint.id==='symeon')vt+=getDillaOffset(step);
+      if(v.saint.id==='bartholomew'&&v.relic.role!=='kick')vt+=0.020+Math.random()*0.015;
+      triggerVoice(v,vt,step,sd);
+    }catch(e){console.warn('Voice trigger error:',e.message);}
   }
   if(auditionVoice){const sd=auditionVoice.pattern&&auditionVoice.pattern[step];if(sd)triggerVoice(auditionVoice,t,step,sd);}
   if(step%4===0){const delay=Math.max(0,(time-AC.ctx.currentTime)*1000);setTimeout(flashBeatHits,delay);}
@@ -3076,6 +3078,8 @@ const PATTERNS={
     gressus:   [s('Am',0,.7),null,null,null,s('Am',0,.7),null,null,null,s('Am',0,.7),null,null,null,s('Am',0,.7),null,null,null],
     // Vocal chops — erratic, ghostly
     larva:     [null,null,null,s('Am',0,.4),null,null,s('Am',3,.38),null,null,null,null,s('Am',0,.42),null,null,null,s('Am',5,.36)],
+    // Morpheus — slow dream wash, hits once per bar
+    morpheus:  [s('Am',0,.35),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
   },
 };
 
@@ -3894,11 +3898,18 @@ function onDragEnd(ev){
   if(target!==null){
     if(fromSlot!==null){
       if(target!==fromSlot){
+        // Atomic swap: collect old voices for deferred cleanup
+        const oldFrom=VOICES[fromSlot];const oldTarget=VOICES[target];
         const temp=slots[target];
-        if(VOICES[fromSlot]){VOICES[fromSlot].output.gain.setTargetAtTime(0,AC.ctx.currentTime,0.02);setTimeout(()=>{try{VOICES[fromSlot].output.disconnect();}catch(e){}},200);delete VOICES[fromSlot];}
-        slots[fromSlot]=null;
-        if(temp){if(VOICES[target]){VOICES[target].output.gain.setTargetAtTime(0,AC.ctx.currentTime,0.02);setTimeout(()=>{try{VOICES[target].output.disconnect();}catch(e){}},200);delete VOICES[target];}slots[target]=null;placeRelic(fromSlot,temp.relic,temp.saint,true);}
+        // Remove old entries immediately (no async gap)
+        delete VOICES[fromSlot];slots[fromSlot]=null;
+        if(oldTarget){delete VOICES[target];slots[target]=null;}
+        // Place new voices
+        if(temp)placeRelic(fromSlot,temp.relic,temp.saint,true);
         placeRelic(target,dragging.relic,dragging.saint,true);
+        // Cleanup old audio nodes after new ones are live
+        if(oldFrom){oldFrom.output.gain.setTargetAtTime(0,AC.ctx.currentTime,0.05);setTimeout(()=>{try{oldFrom.output.disconnect();}catch(e){}},300);}
+        if(oldTarget){oldTarget.output.gain.setTargetAtTime(0,AC.ctx.currentTime,0.05);setTimeout(()=>{try{oldTarget.output.disconnect();}catch(e){}},300);}
         renderSlots();renderRelicGrid();renderAuth();
       }
     } else {
