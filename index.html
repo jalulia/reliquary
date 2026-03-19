@@ -2876,15 +2876,17 @@ function synthPaprika(c,v,t,dur,hz,vel,acc,slide,step){
       sn.connect(se);se.connect(o);sn.start(t);sn.stop(t+0.05);
     }
   }else if(rid==='bell'){
-    // Campana_p — gamelan bell: FM synthesis, high inharmonic partials
-    const bellHz=chord.notes[2]*2;// high register
+    // Campana_p — distant temple bell: low register, soft attack, long metallic ring
+    const bellHz=chord.notes[0];// root register, not doubled up
     const car=c.createOscillator();car.type='sine';car.frequency.value=bellHz;
-    const mod=c.createOscillator();mod.type='sine';mod.frequency.value=bellHz*2.76;// inharmonic ratio
-    const mg=c.createGain();mg.gain.setValueAtTime(bellHz*5,t);mg.gain.exponentialRampToValueAtTime(bellHz*0.1,t+1.5);
+    const mod=c.createOscillator();mod.type='sine';mod.frequency.value=bellHz*1.414;// sqrt(2) ratio — dark, gong-like
+    const mg=c.createGain();mg.gain.setValueAtTime(bellHz*1.5,t);mg.gain.exponentialRampToValueAtTime(bellHz*0.02,t+3);
     mod.connect(mg);mg.connect(car.frequency);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.22,t+0.005);
-    e.gain.exponentialRampToValueAtTime(0.001,t+1.8);
-    car.connect(e);e.connect(o);mod.start(t);car.start(t);mod.stop(t+2);car.stop(t+2);
+    // Soft attack (30ms rise), very long decay (4s) — distant, not staccato
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1200;lp.Q.value=0.5;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.14,t+0.03);
+    e.gain.exponentialRampToValueAtTime(0.001,t+4);
+    car.connect(lp);lp.connect(e);e.connect(o);mod.start(t);car.start(t);mod.stop(t+4.1);car.stop(t+4.1);
   }else if(rid==='arp'){
     // Speculum — mirror reflection: ascending arp through the chord tones
     const arpHz=chord.notes[step%3]*(step%2===0?1:2);
