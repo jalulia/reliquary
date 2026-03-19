@@ -1772,7 +1772,17 @@ const SAINTS=[
 {id:'manvs_sy',name:'Manvs',desc:'Throwing hand — percussive stab',type:'generator',role:'stab'},
 {id:'pes_sy',name:'Pes',desc:'Shuffling feet — behind-the-beat kick',type:'generator',role:'kick'},
 {id:'ocvlvs_sy',name:'Ocvlvs',desc:'Crazy eyes — pitch-warped modulation',type:'modifier',role:'modifier'},
-{id:'cor_sy',name:'Cor',desc:'Heart — off-grid MPC pulse',type:'clock',role:'clock'}]}
+{id:'cor_sy',name:'Cor',desc:'Heart — off-grid MPC pulse',type:'clock',role:'clock'}]},
+{id:'paprika',name:'Paprika',key:'Am',freq:220.00,color:'#FF4500',vibe:'Dream procession',vibeTag:'parade',imgIdx:10,relics:[
+{id:'somnium',name:'Somnium',desc:'The dream — chanting formant choir, Delay Lama voices',type:'generator',role:'chant'},
+{id:'pompa',name:'Pompa',desc:'The parade — brass stab synth on downbeats',type:'generator',role:'brass'},
+{id:'tympanum',name:'Tympanum',desc:'March drum — processional kick and snare',type:'generator',role:'kick'},
+{id:'campana_p',name:'Campana',desc:'Gamelan bell — FM metallic ring',type:'generator',role:'bell'},
+{id:'speculum',name:'Speculum',desc:'Mirror — shimmering arpeggio reflection',type:'generator',role:'arp'},
+{id:'umbra_p',name:'Umbra',desc:'Shadow — dark pad following the chord loop',type:'generator',role:'pad'},
+{id:'gressus',name:'Gressus',desc:'Footstep — steady quarter-note march pulse',type:'clock',role:'clock'},
+{id:'larva',name:'Larva',desc:'Mask/ghost — processed vocal fragment chops',type:'generator',role:'vocal'},
+{id:'morpheus',name:'Morpheus',desc:'God of dreams — LFO depth modulator, deepens reverb',type:'modifier',role:'modifier'}]}
 ];
 
 const SLOT_POS=[
@@ -1899,6 +1909,7 @@ const MODIFIERS={
     if(!AC._porcvs&&AC.ctx){const lfo=AC.ctx.createOscillator();lfo.type='sine';lfo.frequency.value=0.8;const g=AC.ctx.createGain();g.gain.value=2000;lfo.connect(g);g.connect(AC.sharedFilter.frequency);lfo.start();AC._porcvs={lfo,g};}
   },remove(t){if(AC._porcvs){try{AC._porcvs.lfo.stop();}catch(e){}AC._porcvs=null;AC.sharedFilter.frequency.setTargetAtTime(6000,t,0.3);}}},
   viscera:{apply(t){AC.sharedFilter.Q.setTargetAtTime(3.5,t,0.2);},remove(t){AC.sharedFilter.Q.setTargetAtTime(0.7,t,0.3);}},
+  morpheus:{apply(t){AC.reverbWet.gain.setTargetAtTime(0.6,t,0.3);AC.masterLPF.frequency.setTargetAtTime(12000,t,0.5);},remove(t){}},
 };
 
 function applyModifiers(){
@@ -2791,6 +2802,134 @@ function synthSymeon(c,v,t,dur,hz,vel,acc,slide,step){
   }
 }
 
+// ══════ PAPRIKA — Dream Procession (Susumu Hirasawa "Parade") ══════
+// Chord loop: Am→Em→F→C cycling every 8 steps (2 beats per chord at 72 BPM)
+// The parade never resolves — perpetual motion, accumulative layering
+const PAPRIKA_CHORDS=[
+  {notes:[220,261.63,329.63],bass:110},   // Am (steps 0-3)
+  {notes:[164.81,196,246.94],bass:82.41},  // Em (steps 4-7)
+  {notes:[174.61,220,261.63],bass:87.31},  // F (steps 8-11)
+  {notes:[130.81,164.81,196],bass:65.41},  // C (steps 12-15)
+];
+function synthPaprika(c,v,t,dur,hz,vel,acc,slide,step){
+  const o=_out(v),rid=v.relic.role;
+  const chord=PAPRIKA_CHORDS[Math.floor(step/4)];
+  if(rid==='chant'){
+    // Somnium — Delay Lama chanting: formant-filtered saws sweeping ah↔oh
+    const chantHz=chord.notes[0];// follow chord root
+    [-10,-3,0,3,10].forEach(det=>{
+      const s=c.createOscillator();s.type='sawtooth';s.frequency.value=chantHz;s.detune.value=det;
+      const f1=c.createBiquadFilter();f1.type='bandpass';f1.Q.value=5;
+      f1.frequency.setValueAtTime(730,t);// "ah"
+      f1.frequency.setTargetAtTime(570,t,dur*0.6);// drift toward "oh"
+      const f2=c.createBiquadFilter();f2.type='bandpass';f2.Q.value=3;
+      f2.frequency.setValueAtTime(1090,t);f2.frequency.setTargetAtTime(840,t,dur*0.6);
+      s.connect(f1);s.connect(f2);
+      const mix=c.createGain();mix.gain.setValueAtTime(0,t);
+      mix.gain.linearRampToValueAtTime(vel*0.08,t+0.05);
+      mix.gain.setTargetAtTime(vel*0.05,t+0.05,dur*0.4);
+      mix.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
+      f1.connect(mix);f2.connect(mix);mix.connect(o);
+      s.start(t);s.stop(t+dur*2);
+    });
+    // Vibrato
+    const vib=c.createOscillator();vib.type='sine';vib.frequency.value=5.5;
+    const vg=c.createGain();vg.gain.value=25;// ±25 cents — dramatic vibrato
+    vib.start(t);vib.stop(t+dur*2);
+  }else if(rid==='brass'){
+    // Pompa — brass stabs: detuned saws through resonant LP with fast attack
+    const bHz=chord.notes[1];
+    const s1=c.createOscillator();s1.type='sawtooth';s1.frequency.value=bHz;s1.detune.value=-7;
+    const s2=c.createOscillator();s2.type='sawtooth';s2.frequency.value=bHz;s2.detune.value=7;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=5;
+    lp.frequency.setValueAtTime(bHz*6,t);lp.frequency.exponentialRampToValueAtTime(bHz*1.5,t+0.15);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.45,t+0.012);
+    e.gain.setTargetAtTime(vel*0.2,t+0.012,0.08);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.8);
+    s1.connect(lp);s2.connect(lp);lp.connect(e);e.connect(o);
+    s1.start(t);s2.start(t);s1.stop(t+dur);s2.stop(t+dur);
+  }else if(rid==='kick'){
+    // Tympanum — march drums: kick + layered snare
+    if(step%4===0||step%4===2){
+      // Kick on 1 and 3
+      const k=c.createOscillator();k.type='sine';
+      k.frequency.setValueAtTime(150,t);k.frequency.exponentialRampToValueAtTime(55,t+0.05);
+      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.7,t+0.002);
+      e.gain.setTargetAtTime(0.001,t+0.002,0.08);
+      k.connect(e);e.connect(o);k.start(t);k.stop(t+0.25);
+    }
+    if(step%4===1||step%4===3){
+      // Snare on 2 and 4
+      const bl=Math.floor(c.sampleRate*0.06);
+      const buf=c.createBuffer(1,bl,c.sampleRate);const d=buf.getChannelData(0);
+      for(let i=0;i<bl;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bl,1.2);
+      const src=c.createBufferSource();src.buffer=buf;
+      const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1000;bp.Q.value=1;
+      const e=c.createGain();e.gain.setValueAtTime(vel*0.4,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+      src.connect(bp);bp.connect(e);e.connect(o);src.start(t);
+      // Snare body tone
+      const sn=c.createOscillator();sn.type='sine';sn.frequency.value=200;
+      const se=c.createGain();se.gain.setValueAtTime(vel*0.2,t);se.gain.exponentialRampToValueAtTime(0.001,t+0.04);
+      sn.connect(se);se.connect(o);sn.start(t);sn.stop(t+0.05);
+    }
+  }else if(rid==='bell'){
+    // Campana_p — gamelan bell: FM synthesis, high inharmonic partials
+    const bellHz=chord.notes[2]*2;// high register
+    const car=c.createOscillator();car.type='sine';car.frequency.value=bellHz;
+    const mod=c.createOscillator();mod.type='sine';mod.frequency.value=bellHz*2.76;// inharmonic ratio
+    const mg=c.createGain();mg.gain.setValueAtTime(bellHz*5,t);mg.gain.exponentialRampToValueAtTime(bellHz*0.1,t+1.5);
+    mod.connect(mg);mg.connect(car.frequency);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.22,t+0.005);
+    e.gain.exponentialRampToValueAtTime(0.001,t+1.8);
+    car.connect(e);e.connect(o);mod.start(t);car.start(t);mod.stop(t+2);car.stop(t+2);
+  }else if(rid==='arp'){
+    // Speculum — mirror reflection: ascending arp through the chord tones
+    const arpHz=chord.notes[step%3]*(step%2===0?1:2);
+    const s=c.createOscillator();s.type='triangle';s.frequency.value=arpHz;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.18,t+0.004);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.7);
+    s.connect(e);e.connect(o);s.start(t);s.stop(t+dur);
+  }else if(rid==='pad'){
+    // Umbra — dark Kurzweil pad following the chord
+    chord.notes.forEach(n=>{
+      const s1=c.createOscillator();s1.type='sawtooth';s1.frequency.value=n*0.5;s1.detune.value=-8;
+      const s2=c.createOscillator();s2.type='sawtooth';s2.frequency.value=n*0.5;s2.detune.value=8;
+      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=800;lp.Q.value=0.5;
+      // Slow LFO on filter for breathing
+      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.3;
+      const lg=c.createGain();lg.gain.value=200;lfo.connect(lg);lg.connect(lp.frequency);
+      const e=c.createGain();e.gain.setValueAtTime(0,t);
+      e.gain.linearRampToValueAtTime(vel*0.06,t+0.15);
+      e.gain.setTargetAtTime(vel*0.04,t+0.15,dur*0.5);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*3);
+      s1.connect(lp);s2.connect(lp);lp.connect(e);e.connect(o);
+      s1.start(t);s2.start(t);lfo.start(t);
+      s1.stop(t+dur*3);s2.stop(t+dur*3);lfo.stop(t+dur*3);
+    });
+  }else if(rid==='clock'){
+    // Gressus — march footstep: steady quarter-note low thump
+    const k=c.createOscillator();k.type='sine';
+    k.frequency.setValueAtTime(chord.bass,t);k.frequency.exponentialRampToValueAtTime(chord.bass*0.8,t+0.04);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.5,t+0.003);
+    e.gain.setTargetAtTime(0.001,t+0.003,0.06);
+    k.connect(e);e.connect(o);k.start(t);k.stop(t+0.2);
+  }else if(rid==='vocal'){
+    // Larva — mask/ghost: short processed vocal fragment, pitch-shifted chop
+    const vHz=chord.notes[step%3]*(0.5+Math.random()*0.5);
+    const s=c.createOscillator();s.type='sawtooth';s.frequency.value=vHz;
+    const bp=c.createBiquadFilter();bp.type='bandpass';
+    bp.frequency.value=700+Math.random()*600;bp.Q.value=4;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.25,t+0.006);
+    e.gain.exponentialRampToValueAtTime(0.001,t+0.08);
+    s.connect(bp);bp.connect(e);e.connect(o);s.start(t);s.stop(t+0.1);
+  }else{
+    // Modifier/fallback
+    makeFMBell(c,o,t,hz,vel*0.5,2.76,0.3);
+  }
+}
+
 // ══════ PATTERN TABLES ══════
 const K={
   D: [146.83,164.81,185.00,196.00,220.00,246.94,277.18,293.66,329.63,369.99],
@@ -2803,6 +2942,7 @@ const K={
   E: [164.81,185.00,207.65,220.00,246.94,277.18,311.13,329.63,369.99,415.30],
   Ab:[103.83,116.54,130.81,138.59,155.56,174.61,196.00,207.65,233.08,261.63],
   Db:[138.59,155.56,174.61,185.00,207.65,233.08,261.63,277.18,311.13,349.23],
+  Am:[220.00,246.94,261.63,293.66,329.63,349.23,392.00,440.00,493.88,523.25],
 };
 function s(key,deg,vel,acc,slide){return{hz:K[key][deg]||K[key][0],v:vel||0.75,acc:!!acc,slide:!!slide};}
 function sb(key,deg,vel,acc,slide){return{hz:(K[key][deg]||K[key][0])*0.5,v:vel||0.75,acc:!!acc,slide:!!slide};}
@@ -2918,6 +3058,25 @@ const PATTERNS={
     pes_sy:    [sb('Db',0,.85,1),null,null,null,sb('Db',0,.85,1),null,null,null,sb('Db',0,.85,1),null,null,null,sb('Db',0,.85,1),null,null,null],
     cor_sy:    [sb('Db',0,.78),null,null,null,sb('Db',0,.78),null,null,null,sb('Db',0,.78),null,null,null,sb('Db',0,.78),null,null,null],
   },
+  paprika:{
+    // Am→Em→F→C, each chord 4 steps. The parade never stops.
+    // Chant hits on each chord change with sustain
+    somnium:   [s('Am',0,.65),null,null,null,s('Am',4,.6),null,null,null,s('Am',5,.62),null,null,null,s('Am',0,.58),null,null,null],
+    // Brass stabs on downbeats of each chord
+    pompa:     [s('Am',2,.72,1),null,null,null,s('Am',4,.68,1),null,null,null,s('Am',5,.7,1),null,null,null,s('Am',0,.66,1),null,null,null],
+    // March drums — every step gets either kick or snare
+    tympanum:  [s('Am',0,.85),s('Am',0,.55),s('Am',0,.8),s('Am',0,.55),s('Am',0,.85),s('Am',0,.55),s('Am',0,.8),s('Am',0,.55),s('Am',0,.85),s('Am',0,.55),s('Am',0,.8),s('Am',0,.55),s('Am',0,.85),s('Am',0,.55),s('Am',0,.8),s('Am',0,.55)],
+    // Gamelan bells — sparse, high register
+    campana_p: [null,null,s('Am',7,.48),null,null,null,null,null,null,null,s('Am',7,.44),null,null,null,null,null],
+    // Arp — ascending reflection on every other step
+    speculum:  [s('Am',0,.42),null,s('Am',2,.38),null,s('Am',4,.42),null,s('Am',2,.38),null,s('Am',5,.42),null,s('Am',4,.38),null,s('Am',0,.42),null,s('Am',2,.38),null],
+    // Dark pad — hits once per chord change, sustains
+    umbra_p:   [s('Am',0,.5),null,null,null,s('Am',4,.48),null,null,null,s('Am',5,.5),null,null,null,s('Am',0,.48),null,null,null],
+    // March clock — every beat
+    gressus:   [s('Am',0,.7),null,null,null,s('Am',0,.7),null,null,null,s('Am',0,.7),null,null,null,s('Am',0,.7),null,null,null],
+    // Vocal chops — erratic, ghostly
+    larva:     [null,null,null,s('Am',0,.4),null,null,s('Am',3,.38),null,null,null,null,s('Am',0,.42),null,null,null,s('Am',5,.36)],
+  },
 };
 
 const SYNTH_FNS={
@@ -2931,6 +3090,7 @@ const SYNTH_FNS={
   anthony:synthAnth,
   vitus:synthVitus,
   symeon:synthSymeon,
+  paprika:synthPaprika,
 };
 
 // ══════ VOICE BUILDER ══════
@@ -3514,7 +3674,9 @@ const SAINT_ICONS=[
   // Vitus — cauldron
   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4,6 Q4,13 8,13 Q12,13 12,6"/><path d="M3,6 L13,6"/><path d="M6,4 Q7,2 8,4 Q9,2 10,4"/><path d="M2,8 L4,7"/><path d="M14,8 L12,7"/></svg>',
   // Symeon — pillar
-  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="6" y="5" width="4" height="9" rx=".5"/><path d="M5,5 L11,5"/><path d="M5,14 L11,14"/><circle cx="8" cy="3" r="2"/></svg>'
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="6" y="5" width="4" height="9" rx=".5"/><path d="M5,5 L11,5"/><path d="M5,14 L11,14"/><circle cx="8" cy="3" r="2"/></svg>',
+  // Paprika — butterfly/dream
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M8,3 L8,13"/><path d="M8,5 Q3,2 2,6 Q1,10 6,9 Q8,8 8,5"/><path d="M8,5 Q13,2 14,6 Q15,10 10,9 Q8,8 8,5"/><circle cx="8" cy="3" r="1" fill="currentColor"/></svg>'
 ];
 // ══════ UI: SAINT ACCORDION ══════
 // ══════ SAINT SILHOUETTES — per-saint SVGs for body-mapped relic layout ══════
