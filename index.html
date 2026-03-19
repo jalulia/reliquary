@@ -1904,7 +1904,7 @@ function getDillaOffset(step){
 
 // ══════ SEQUENCER ══════
 function startSequencer(){if(timerID)return;nextStepTime=AC.ctx.currentTime+0.05;stepIndex=0;tick();}
-function tick(){while(nextStepTime<AC.ctx.currentTime+SCHEDULE_AHEAD){scheduleStep(stepIndex,nextStepTime);nextStepTime+=STEP_DUR;stepIndex=(stepIndex+1)%16;}timerID=setTimeout(tick,TICK_MS);}
+function tick(){try{while(nextStepTime<AC.ctx.currentTime+SCHEDULE_AHEAD){scheduleStep(stepIndex,nextStepTime);nextStepTime+=STEP_DUR;stepIndex=(stepIndex+1)%16;}}catch(e){console.error('tick error:',e.message);}timerID=setTimeout(tick,TICK_MS);}
 
 function scheduleStep(step,time){
   let t=time;
@@ -1923,12 +1923,14 @@ function scheduleStep(step,time){
 
 function triggerVoice(v,time,step,sd){
   if(!v.synthFn)return;
-  const hz=sd.hz||v.saint.freq;
-  const vel=sd.v!=null?sd.v:0.8;
-  const dur=(sd.dur||1)*STEP_DUR*0.85;
-  const acc=sd.acc||false;
-  const slide=sd.slide||false;
-  v.synthFn(AC.ctx,v,time,dur,hz,vel,acc,slide,step);
+  try{
+    const hz=sd.hz||v.saint.freq;
+    const vel=sd.v!=null?sd.v:0.8;
+    const dur=(sd.dur||1)*STEP_DUR*0.85;
+    const acc=sd.acc||false;
+    const slide=sd.slide||false;
+    v.synthFn(AC.ctx,v,time,dur,hz,vel,acc,slide,step);
+  }catch(e){console.error('triggerVoice error:',v.relic?.id,e.message);}
 }
 
 // ══════ SYNTHESIS HELPERS ══════
@@ -2808,12 +2810,12 @@ function buildVoice(relic,saint,outputNode){
   const c=AC.ctx,vg=c.createGain();vg.gain.value=0.7;
   let dest=outputNode||AC.master;
   if(saint.id==='bartholomew'){
-    // Chopped & screwed signal chain: voice → lowpass (underwater) → flanger → dest
-    // LP at 3500 Hz — screwed tapes lose all air
-    const screwLP=c.createBiquadFilter();screwLP.type='lowpass';screwLP.frequency.value=3500;screwLP.Q.value=0.8;
+    // Chopped & screwed signal chain: voice → boost → lowpass (underwater) → flanger → dest
+    const screwBoost=c.createGain();screwBoost.gain.value=2.5;// compensate for chain losses
+    const screwLP=c.createBiquadFilter();screwLP.type='lowpass';screwLP.frequency.value=5000;screwLP.Q.value=0.6;
     // Flanger: slow sweep, subtle feedback, syrupy movement
-    const flDry=c.createGain();flDry.gain.value=0.65;
-    const flWet=c.createGain();flWet.gain.value=0.35;
+    const flDry=c.createGain();flDry.gain.value=0.7;
+    const flWet=c.createGain();flWet.gain.value=0.3;
     const flDelay=c.createDelay(0.02);flDelay.delayTime.value=0.003;
     const flFb=c.createGain();flFb.gain.value=0.3;
     const flLfo=c.createOscillator();flLfo.type='sine';flLfo.frequency.value=0.15;
@@ -2823,7 +2825,7 @@ function buildVoice(relic,saint,outputNode){
     flDelay.connect(flWet);
     screwLP.connect(flDry);screwLP.connect(flDelay);
     flDry.connect(dest);flWet.connect(dest);
-    vg.connect(screwLP);
+    vg.connect(screwBoost);screwBoost.connect(screwLP);
   }else{
     vg.connect(dest);
   }
