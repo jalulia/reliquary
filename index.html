@@ -1871,6 +1871,18 @@ function updateDensity(){
   updateJosephGravity(t);
   if(ROOM.masterGain)ROOM.masterGain.gain.setTargetAtTime(Math.max(1.0-n*0.012,0.88),t,0.5);
   applyModifiers();
+  // Dominant-saint ducking: the saint with the most relics plays at full volume,
+  // minority saints duck to 40% to avoid cross-key mud
+  const saintCounts={};
+  Object.values(VOICES).forEach(v=>{saintCounts[v.saint.id]=(saintCounts[v.saint.id]||0)+1;});
+  const maxCount=Math.max(...Object.values(saintCounts),0);
+  if(maxCount>0){
+    Object.values(VOICES).forEach(v=>{
+      const count=saintCounts[v.saint.id]||0;
+      const targetGain=count===maxCount?0.7:0.7*0.4;// minority saints duck to 40%
+      v.output.gain.setTargetAtTime(targetGain,t,0.3);
+    });
+  }
 }
 
 // ══════ MODIFIER REGISTRY ══════
@@ -2118,25 +2130,22 @@ function synthBarth(c,v,t,dur,hz,vel,acc,slide,step){
     const e=c.createGain();e.gain.setValueAtTime(vel*0.10,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.02);
     ck.connect(bp);bp.connect(e);e.connect(o);ck.start(t);ck.stop(t+0.025);
   }else if(rid==='breath'){
-    // Pulmo — screwed Juno pad: dark, heavy, fills the room like fog
-    // 4 voices: root, 5th, octave, minor 7th — dark minor chord
-    const notes=[shz,shz*1.5,shz*2,shz*1.782];// root, 5th, 8va, m7
+    // Pulmo — screwed Juno pad: dark minor chord, 2 notes × 2 saws (4 oscs, not 12)
+    const notes=[shz,shz*1.782];// root + minor 7th — dark interval
     notes.forEach((n,ni)=>{
-      const o1=c.createOscillator();o1.type='sawtooth';o1.frequency.value=n;o1.detune.value=humanize(-12,0.5);
-      const o2=c.createOscillator();o2.type='sawtooth';o2.frequency.value=n;o2.detune.value=humanize(12,0.5);
-      const o3=c.createOscillator();o3.type='sawtooth';o3.frequency.value=n;o3.detune.value=humanize(0,0.5);
-      // Woozy chorus — seasick drift
-      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.15+ni*0.05;
-      const lg=c.createGain();lg.gain.value=9;
-      lfo.connect(lg);lg.connect(o1.detune);lg.connect(o2.detune);lg.connect(o3.detune);
-      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=n*2;lp.Q.value=0.9;
+      const o1=c.createOscillator();o1.type='sawtooth';o1.frequency.value=n;o1.detune.value=humanize(-10,0.5);
+      const o2=c.createOscillator();o2.type='sawtooth';o2.frequency.value=n;o2.detune.value=humanize(10,0.5);
+      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.15+ni*0.08;
+      const lg=c.createGain();lg.gain.value=8;
+      lfo.connect(lg);lg.connect(o1.detune);lg.connect(o2.detune);
+      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=n*2;lp.Q.value=0.8;
       const e=c.createGain();e.gain.setValueAtTime(0,t);
-      e.gain.linearRampToValueAtTime(vel*0.22,t+0.4);// slow swell
-      e.gain.setTargetAtTime(vel*0.16,t+0.4,dur*0.8);
-      e.gain.exponentialRampToValueAtTime(0.001,t+dur*5);
-      o1.connect(lp);o2.connect(lp);o3.connect(lp);lp.connect(e);e.connect(o);
-      o1.start(t);o2.start(t);o3.start(t);lfo.start(t);
-      o1.stop(t+dur*5);o2.stop(t+dur*5);o3.stop(t+dur*5);lfo.stop(t+dur*5);
+      e.gain.linearRampToValueAtTime(vel*0.18,t+0.4);
+      e.gain.setTargetAtTime(vel*0.12,t+0.4,dur*0.8);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*4);
+      o1.connect(lp);o2.connect(lp);lp.connect(e);e.connect(o);
+      o1.start(t);o2.start(t);lfo.start(t);
+      o1.stop(t+dur*4);o2.stop(t+dur*4);lfo.stop(t+dur*4);
     });
   }else if(rid==='lead'){
     // Lingua — screwed Moog bass: slow-motion "bwwwooowww" filter sweep
@@ -2241,22 +2250,38 @@ function synthCath(c,v,t,dur,hz,vel,acc,slide,step){
     const o=c.createOscillator();o.type='square';o.frequency.value=hz*8;
     const e=c.createGain();e.gain.setValueAtTime(vel*0.18,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.012);
     o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+0.015);
-  }else if(rid==='lead'||rid==='arp'){
+  }else if(rid==='lead'){
+    // Cerebrum — complex melodic sequence: PWM square with filter sweep
     const o=c.createOscillator();o.type='square';o.frequency.value=hz;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*4;lp.Q.value=0.7;
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.28,t+0.003);
-    e.gain.linearRampToValueAtTime(0,t+dur*0.62);
-    o.connect(lp);lp.connect(e);e.connect(_out(v));o.start(t);o.stop(t+dur*0.68);
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=3;
+    lp.frequency.setValueAtTime(hz*6,t);lp.frequency.exponentialRampToValueAtTime(hz*1.5,t+dur*0.5);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.3,t+0.003);
+    e.gain.setTargetAtTime(vel*0.15,t+0.003,dur*0.3);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.9);
+    o.connect(lp);lp.connect(e);e.connect(_out(v));o.start(t);o.stop(t+dur);
+  }else if(rid==='arp'){
+    // Sangvis — blood arpeggios: triangle wave with chorus detune, lighter character
+    [-6,0,6].forEach(det=>{
+      const o=c.createOscillator();o.type='triangle';o.frequency.value=hz;o.detune.value=det;
+      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.12,t+0.004);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.7);
+      o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+dur*0.8);
+    });
   }else if(rid==='snare'){
     makeNoise(c,_out(v),t,vel,0.03,null,1000);
     const o=c.createOscillator();o.type='sine';o.frequency.value=hz*0.5;
     const e=c.createGain();e.gain.setValueAtTime(vel*0.3,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.02);
     o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+0.025);
   }else if(rid==='shimmer'){
-    const o=c.createOscillator();o.type='sine';o.frequency.value=hz;
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.22,t+0.02);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.9);
-    o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+dur);
+    // Capillvs — shimmering hair: high harmonics, detuned sine cluster with slow drift
+    [hz*2,hz*3,hz*4].forEach((n,i)=>{
+      const o=c.createOscillator();o.type='sine';o.frequency.value=n;
+      o.detune.value=(Math.random()-0.5)*15;
+      const e=c.createGain();e.gain.setValueAtTime(0,t);
+      e.gain.linearRampToValueAtTime(vel*0.06,t+0.03+i*0.02);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*(1.2-i*0.15));
+      o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+dur*1.3);
+    });
   }else if(rid==='pad'){
     [hz,hz*1.26,hz*1.5].forEach(n=>{
       const o=c.createOscillator();o.type='square';o.frequency.value=n;
@@ -2268,10 +2293,14 @@ function synthCath(c,v,t,dur,hz,vel,acc,slide,step){
   }else if(rid==='sub'){
     makeSub(c,_out(v),t,hz,vel,dur);
   }else if(rid==='melody'){
-    const o=c.createOscillator();o.type='sine';o.frequency.value=hz;
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.32,t+0.005);
+    // Lacrimae — crystalline tears descending: saw through resonant LP, vocal quality
+    const o=c.createOscillator();o.type='sawtooth';o.frequency.value=hz;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=5;
+    lp.frequency.setValueAtTime(hz*4,t);lp.frequency.exponentialRampToValueAtTime(hz*1.2,t+dur*1.5);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.25,t+0.008);
+    e.gain.setTargetAtTime(vel*0.15,t+0.008,dur*0.4);
     e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
-    o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+dur*2);
+    o.connect(lp);lp.connect(e);e.connect(_out(v));o.start(t);o.stop(t+dur*2);
   }else if(rid==='accent'){
     const o=c.createOscillator();o.type='square';o.frequency.value=hz;
     const e=c.createGain();e.gain.setValueAtTime(vel*0.28,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.015);
@@ -2287,9 +2316,15 @@ function synthCath(c,v,t,dur,hz,vel,acc,slide,step){
 function synthDenis(c,v,t,dur,hz,vel,acc,slide,step){
   const rid=v.relic.role;
   if(rid==='sub'){
-    makeSub(c,_out(v),t,hz,vel,dur);
+    // Sangvis — blood trail: sustained sub sine, longer decay
+    makeSub(c,_out(v),t,hz*0.5,vel,dur*2);
   }else if(rid==='kick'){
-    makeSub(c,_out(v),t,hz,vel*1.1,dur);
+    // Cor — deep dub heart: sine pitch sweep with long body bloom
+    const k=c.createOscillator();k.type='sine';
+    k.frequency.setValueAtTime(hz*0.6,t);k.frequency.exponentialRampToValueAtTime(hz*0.2,t+0.1);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.65,t+0.004);
+    e.gain.setTargetAtTime(0.001,t+0.004,0.18);// long bloom
+    k.connect(e);e.connect(_out(v));k.start(t);k.stop(t+0.5);
   }else if(rid==='delay'){
     const o=c.createOscillator();o.type='triangle';o.frequency.value=hz;
     const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.28,t+0.004);
@@ -2313,8 +2348,7 @@ function synthDenis(c,v,t,dur,hz,vel,acc,slide,step){
   }else if(rid==='spring'){
     const o=c.createOscillator();o.type='triangle';o.frequency.value=hz;
     const e=c.createGain();e.gain.setValueAtTime(vel*0.3,t);e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
-    o.connect(e);e.connect(_out(v));
-    if(AC.reverbSend)e.connect(AC.reverbSend);
+    o.connect(e);e.connect(_out(v));// reverb already connected via buildVoice
     o.start(t);o.stop(t+dur*2+0.02);
   }else if(rid==='vocal'){
     const o=c.createOscillator();o.type='sawtooth';o.frequency.value=hz;
@@ -2746,7 +2780,11 @@ function synthSymeon(c,v,t,dur,hz,vel,acc,slide,step){
     makeSub(c,_out(v),t,hz,vel*1.05,dur);
     makeNoise(c,_out(v),t,vel*0.15,0.025,600,null);
   }else if(rid==='clock'){
-    makeSub(c,_out(v),t,hz,vel*0.8,dur*0.6);
+    // Shuffling feet clock: short filtered click, behind-the-beat character
+    const ck=c.createOscillator();ck.type='triangle';ck.frequency.value=hz*2;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*4;lp.Q.value=2;
+    const e=c.createGain();e.gain.setValueAtTime(vel*0.3,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.025);
+    ck.connect(lp);lp.connect(e);e.connect(_out(v));ck.start(t);ck.stop(t+0.03);
   }else{
     makeBitCrush(c,_out(v),t,hz,vel,dur,true);
   }
@@ -2900,7 +2938,7 @@ function buildVoice(relic,saint,outputNode){
   let dest=outputNode||AC.master;
   if(saint.id==='bartholomew'){
     // Chopped & screwed signal chain: voice → boost → lowpass (underwater) → flanger → dest
-    const screwBoost=c.createGain();screwBoost.gain.value=2.5;// compensate for chain losses
+    const screwBoost=c.createGain();screwBoost.gain.value=1.4;// moderate compensation (was 2.5, caused clipping)
     const screwLP=c.createBiquadFilter();screwLP.type='lowpass';screwLP.frequency.value=5000;screwLP.Q.value=0.6;
     // Flanger: slow sweep, subtle feedback, syrupy movement
     const flDry=c.createGain();flDry.gain.value=0.7;
@@ -2910,11 +2948,12 @@ function buildVoice(relic,saint,outputNode){
     const flLfo=c.createOscillator();flLfo.type='sine';flLfo.frequency.value=0.15;
     const flLfoG=c.createGain();flLfoG.gain.value=0.002;
     flLfo.connect(flLfoG);flLfoG.connect(flDelay.delayTime);flLfo.start();
-    flDelay.connect(flFb);flFb.connect(flDelay);// feedback loop
+    flDelay.connect(flFb);flFb.connect(flDelay);
     flDelay.connect(flWet);
     screwLP.connect(flDry);screwLP.connect(flDelay);
     flDry.connect(dest);flWet.connect(dest);
     vg.connect(screwBoost);screwBoost.connect(screwLP);
+    vg._screwLfo=flLfo;// store for cleanup
   }else{
     vg.connect(dest);
   }
@@ -3079,19 +3118,19 @@ function synthLilium(ctx,out){
   const o1=ctx.createOscillator();o1.type='sine';o1.frequency.value=440;o1.detune.value=(Math.random()-0.5)*8;
   const o2=ctx.createOscillator();o2.type='sine';o2.frequency.value=660;o2.detune.value=(Math.random()-0.5)*8;
   const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800;lp.Q.value=0.5;
-  const mg=ctx.createGain();mg.gain.value=0.006;
+  const mg=ctx.createGain();mg.gain.value=0.024;
   const blfo=ctx.createOscillator();blfo.type='sine';blfo.frequency.value=0.06;
-  const bg=ctx.createGain();bg.gain.value=0.003;
+  const bg=ctx.createGain();bg.gain.value=0.012;
   blfo.connect(bg);bg.connect(mg.gain);
   o1.connect(lp);o2.connect(lp);lp.connect(mg);mg.connect(out);
   o1.start();o2.start();blfo.start();
   // Soft breathy texture
   const ns=ctx.createBufferSource();ns.buffer=getPinkNoise(ctx);ns.loop=true;
   const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2400;bp.Q.value=1.8;
-  const ng=ctx.createGain();ng.gain.value=0.004;
+  const ng=ctx.createGain();ng.gain.value=0.016;
   ns.connect(bp);bp.connect(ng);ng.connect(out);ns.start();
   return{stop(){try{o1.stop();o2.stop();blfo.stop();ns.stop();}catch(e){}},
-    scaleUp(f,t,d){mg.gain.setTargetAtTime(0.006*f,t,d*0.3);ng.gain.setTargetAtTime(0.004*f,t,d*0.3);}};
+    scaleUp(f,t,d){mg.gain.setTargetAtTime(0.024*f,t,d*0.3);ng.gain.setTargetAtTime(0.016*f,t,d*0.3);}};
 }
 
 function synthLiber(ctx,out){
@@ -3230,7 +3269,7 @@ function synthAqua(ctx,out){
   const wlfo=ctx.createOscillator();wlfo.type='sine';wlfo.frequency.value=0.1;
   const wlg=ctx.createGain();wlg.gain.value=60;
   wlfo.connect(wlg);wlg.connect(wbp.frequency);wlfo.start();
-  const wg=ctx.createGain();wg.gain.value=0.003;
+  const wg=ctx.createGain();wg.gain.value=0.015;
   wns.connect(wbp);wbp.connect(wg);wg.connect(out);wns.start();
   function singleDrip(t,gain){
     // Drip: descending sine chirp (liquid bubble, not noise)
@@ -3714,7 +3753,13 @@ function placeRelic(idx,relic,saint,silent){
 }
 function removeFromSlot(idx,silent){
   const s=slots[idx];if(!s)return;
-  if(s.voice&&s.voice.output){s.voice.output.gain.setTargetAtTime(0,AC.ctx.currentTime,silent?0.02:0.05);setTimeout(()=>{try{s.voice.output.disconnect();}catch(e){}},250);}
+  if(s.voice&&s.voice.output){
+    s.voice.output.gain.setTargetAtTime(0,AC.ctx.currentTime,silent?0.02:0.05);
+    // Cleanup leaky nodes
+    if(s.voice.output._screwLfo)try{s.voice.output._screwLfo.stop();}catch(e){}
+    if(s.voice._acidOsc)try{s.voice._acidOsc.stop();}catch(e){}
+    setTimeout(()=>{try{s.voice.output.disconnect();}catch(e){}},250);
+  }
   delete VOICES[idx];slots[idx]=null;updateDensity();
   if(!silent){renderSlots();renderRelicGrid();renderAuth();}
   if(Object.keys(VOICES).length===0&&timerID){clearTimeout(timerID);timerID=null;}resetIdleTimer();
