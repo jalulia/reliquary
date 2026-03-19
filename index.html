@@ -3006,49 +3006,44 @@ function synthLilium(ctx,out){
 }
 
 function synthLiber(ctx,out){
-  // Sacred book: whispered prayer murmur using detuned formant oscillators (not noise),
-  // with occasional page turn events
-  // Prayer murmur: 3 detuned sawtooth oscillators through vowel formant filters
-  // This produces a choral murmur without raw noise
-  // Gregorian chant: deeper, eerier, louder. Two voice groups (low drone + high melody)
-  // Low voices: fundamentals at ~80-110 Hz (basso profondo), high: ~180-220 Hz (tenor)
-  // Gregorian chant: distant, echoey, descending "ah ah ah oh oh ohhhh"
-  // Sits far back in the mix — a memory of voices, not voices themselves
+  // Warm vocal room — not menacing, not horror. The sound of a handful of monks
+  // murmuring vespers in a stone chapel. Soft, rounded, human.
+  // Triangle waves (not saws) through gentle lowpass (not bandpass) with tanh saturation
+  // to round everything warm, like Symeon's Canis approach but higher and vocal.
   const voices=[
-    {hz:82,formants:[300,700],gain:0.035},    // basso 1
-    {hz:88,formants:[350,750],gain:0.032},    // basso 2 (beating)
-    {hz:110,formants:[400,1000],gain:0.028},   // baritone
-    {hz:165,formants:[500,1200],gain:0.022},   // tenor 1
-    {hz:172,formants:[480,1150],gain:0.020},   // tenor 2 (beating)
+    {hz:130,gain:0.04},  // baritone unison 1
+    {hz:132,gain:0.038}, // baritone unison 2 (1.5Hz beating = gentle chorus)
+    {hz:196,gain:0.032}, // tenor — a fifth above
+    {hz:198,gain:0.030}, // tenor 2 (beating)
+    {hz:262,gain:0.020}, // alto — octave above baritone
   ];
   const oscs=[];const gains=[];
-  // Shared descending formant sweep: "ah" (800Hz) → "oh" (350Hz), slow cycle
-  const sweepLfo=ctx.createOscillator();sweepLfo.type='sine';sweepLfo.frequency.value=0.06;// ~17s cycle
-  const sweepG=ctx.createGain();sweepG.gain.value=220;// sweeps ±220Hz around center
-  sweepLfo.connect(sweepG);sweepLfo.start();
-  oscs.push(sweepLfo);
+  // Shared tanh saturation — warms and rounds the signal like analog tape
+  const sat=ctx.createWaveShaper();
+  const curve=new Float32Array(256);
+  for(let i=0;i<256;i++){const x=(i/128)-1;curve[i]=Math.tanh(x*1.5);}
+  sat.curve=curve;sat.oversample='2x';
+  // Gentle lowpass — no harsh harmonics, just warm body
+  const masterLP=ctx.createBiquadFilter();masterLP.type='lowpass';masterLP.frequency.value=1800;masterLP.Q.value=0.5;
+  sat.connect(masterLP);masterLP.connect(out);
   voices.forEach(v=>{
-    const o=ctx.createOscillator();o.type='sawtooth';
-    o.frequency.value=v.hz;o.detune.value=(Math.random()-0.5)*12;
-    const mix=ctx.createGain();mix.gain.value=v.gain;
-    v.formants.forEach(ff=>{
-      const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=ff;f.Q.value=4;
-      sweepG.connect(f.frequency);// shared formant drift
-      o.connect(f);f.connect(mix);
-    });
-    // Very slow AM — phrase-length breathing, not syllabic
+    const o=ctx.createOscillator();o.type='triangle';// soft harmonics, not buzzy
+    o.frequency.value=v.hz;o.detune.value=(Math.random()-0.5)*8;
+    const g=ctx.createGain();g.gain.value=v.gain;
+    // Very slow breathing — 20-30 second cycles
     const amLfo=ctx.createOscillator();amLfo.type='sine';
-    amLfo.frequency.value=0.08+Math.random()*0.06;// ~12-16s breath cycle
-    const amG=ctx.createGain();amG.gain.value=v.gain*0.5;
-    amLfo.connect(amG);amG.connect(mix.gain);
-    mix.connect(out);o.start();amLfo.start();
-    oscs.push(o,amLfo);gains.push(mix);
+    amLfo.frequency.value=0.035+Math.random()*0.03;
+    const amG=ctx.createGain();amG.gain.value=v.gain*0.4;
+    amLfo.connect(amG);amG.connect(g.gain);
+    o.connect(g);g.connect(sat);
+    o.start();amLfo.start();
+    oscs.push(o,amLfo);gains.push(g);
   });
-  // Pitch drift for living vocal quality
-  const driftLFO=ctx.createOscillator();driftLFO.type='sine';driftLFO.frequency.value=0.04;
-  const driftG=ctx.createGain();driftG.gain.value=3; // ±3 cents
+  // Gentle pitch drift — human imperfection
+  const driftLFO=ctx.createOscillator();driftLFO.type='sine';driftLFO.frequency.value=0.03;
+  const driftG=ctx.createGain();driftG.gain.value=2;// ±2 cents — subtle
   driftLFO.connect(driftG);
-  oscs.filter(o=>o.type==='sawtooth').forEach(o=>driftG.connect(o.detune));
+  oscs.filter(o=>o.type==='triangle').forEach(o=>driftG.connect(o.detune));
   driftLFO.start();
   oscs.push(driftLFO);
 
