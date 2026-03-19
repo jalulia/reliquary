@@ -2839,18 +2839,19 @@ function synthPaprika(c,v,t,dur,hz,vel,acc,slide,step){
     const vg=c.createGain();vg.gain.value=25;// ±25 cents — dramatic vibrato
     vib.start(t);vib.stop(t+dur*2);
   }else if(rid==='brass'){
-    // Pompa — brass stabs: detuned saws through resonant LP with fast attack
-    const bHz=chord.notes[1];
-    const s1=c.createOscillator();s1.type='sawtooth';s1.frequency.value=bHz;s1.detune.value=-7;
-    const s2=c.createOscillator();s2.type='sawtooth';s2.frequency.value=bHz;s2.detune.value=7;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=5;
-    lp.frequency.setValueAtTime(bHz*6,t);lp.frequency.exponentialRampToValueAtTime(bHz*1.5,t+0.15);
+    // Pompa — distant processional horns: slow swell, muffled through stone, warm not stabbing
+    const bHz=chord.notes[1]*0.5;// octave down — deeper, less aggressive
+    const s1=c.createOscillator();s1.type='sawtooth';s1.frequency.value=bHz;s1.detune.value=-4;
+    const s2=c.createOscillator();s2.type='sawtooth';s2.frequency.value=bHz;s2.detune.value=4;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=0.7;// no resonance — muffled
+    lp.frequency.setValueAtTime(bHz*2,t);lp.frequency.exponentialRampToValueAtTime(bHz*3.5,t+0.15);
+    lp.frequency.exponentialRampToValueAtTime(bHz*1.2,t+dur*1.5);
     const e=c.createGain();e.gain.setValueAtTime(0,t);
-    e.gain.linearRampToValueAtTime(vel*0.45,t+0.012);
-    e.gain.setTargetAtTime(vel*0.2,t+0.012,0.08);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.8);
+    e.gain.linearRampToValueAtTime(vel*0.18,t+0.06);// slow 60ms swell, not stab
+    e.gain.setTargetAtTime(vel*0.12,t+0.06,dur*0.4);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
     s1.connect(lp);s2.connect(lp);lp.connect(e);e.connect(o);
-    s1.start(t);s2.start(t);s1.stop(t+dur);s2.stop(t+dur);
+    s1.start(t);s2.start(t);s1.stop(t+dur*2+0.05);s2.stop(t+dur*2+0.05);
   }else if(rid==='kick'){
     // Tympanum — march drums: kick + layered snare
     if(step%4===0||step%4===2){
