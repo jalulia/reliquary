@@ -2105,17 +2105,27 @@ function synthBarth(c,v,t,dur,hz,vel,acc,slide,step){
       o1.start(t);o2.start(t);lfo.start(t);o1.stop(t+dur*4);o2.stop(t+dur*4);lfo.stop(t+dur*4);
     });
   }else if(rid==='lead'){
-    // Lingua — THE bass: single saw, very resonant LP, fast sharp filter snap
-    const saw=c.createOscillator();saw.type='sawtooth';saw.frequency.value=hz;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=18;
-    // The "bwow": filter snaps open then closes fast
-    const peak=hz*(acc?12:8);
+    // Lingua — Moog Source bass: 2 saws (octave apart), resonant LP with fast attack envelope
+    // This IS the Blue Monday bassline voice — thick, driving, "bwow" filter character
+    const saw1=c.createOscillator();saw1.type='sawtooth';saw1.frequency.value=hz;
+    const saw2=c.createOscillator();saw2.type='sawtooth';saw2.frequency.value=hz*0.5;// sub octave
+    saw2.detune.value=2;// slight thickening
+    const mix=c.createGain();mix.gain.value=1;
+    saw1.connect(mix);saw2.connect(mix);
+    // Resonant filter — the "bwow"
+    const lp=c.createBiquadFilter();lp.type='lowpass';
+    lp.Q.value=acc?14:10;// high resonance = that vocal squelch
+    const peak=hz*(acc?10:6);
     lp.frequency.setValueAtTime(peak,t);
-    lp.frequency.exponentialRampToValueAtTime(hz*0.7,t+0.12);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.55,t+0.002);
-    e.gain.setTargetAtTime(vel*0.32,t+0.002,dur*0.3);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.2);
-    saw.connect(lp);lp.connect(e);e.connect(o);saw.start(t);saw.stop(t+dur*1.2+0.02);
+    lp.frequency.exponentialRampToValueAtTime(hz*1.2,t+0.08);// fast close
+    lp.frequency.setTargetAtTime(hz*0.6,t+0.08,0.15);// slow tail
+    // Amp: punchy attack, sustained body, clean release
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.62,t+0.003);
+    e.gain.setTargetAtTime(vel*0.42,t+0.003,dur*0.4);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
+    mix.connect(lp);lp.connect(e);e.connect(o);
+    saw1.start(t);saw2.start(t);saw1.stop(t+dur*1.5+0.02);saw2.stop(t+dur*1.5+0.02);
   }else{
     makeGatedSaw(c,o,t,hz,vel*1.3,hz*2.2,10);
   }
@@ -2542,12 +2552,15 @@ function sb(key,deg,vel,acc,slide){return{hz:(K[key][deg]||K[key][0])*0.5,v:vel|
 
 const PATTERNS={
   bartholomew:{
-    nervus:   [null,null,null,null,s('D',0,.88),null,null,null,null,null,null,null,s('D',0,.85),null,s('D',0,.55),null],
-    musculus: [s('D',0,.5),null,s('D',0,.45),null,s('D',0,.5),null,s('D',0,.45),null,s('D',0,.5),null,s('D',0,.45,1),null,s('D',0,.5),null,s('D',0,.45),null],
-    os:       [sb('D',0,.95),null,null,null,sb('D',0,.9),null,null,null,sb('D',0,.95),null,null,null,sb('D',0,.9),null,null,null],
-    vena:     [s('D',0,.2),s('D',0,.14),s('D',0,.2),s('D',0,.14),s('D',0,.2),s('D',0,.14),s('D',0,.2),s('D',0,.14),s('D',0,.2),s('D',0,.14),s('D',0,.2),s('D',0,.14),s('D',0,.2),s('D',0,.14),s('D',0,.2),s('D',0,.14)],
-    pulmo:    [s('D',0,.5),null,null,null,null,null,null,null,s('D',4,.48),null,null,null,null,null,null,null],
-    lingua:   [s('D',0,.75),null,s('D',0,.65),null,s('D',3,.7),null,s('D',3,.6),null,s('D',5,.72),null,s('D',5,.62),null,s('D',3,.68,1),null,s('D',0,.6),null],
+    // Blue Monday architecture: lingua=THE BASS (driving, syncopated, octave jumps),
+    // os=four-on-floor kick, musculus=mechanical 8th hi-hat, nervus=snare on 2&4,
+    // vena=16th pulse clock, pulmo=cold atmospheric pad
+    nervus:   [null,null,null,null,s('D',0,.9),null,null,null,null,null,null,null,s('D',0,.88),null,null,null],
+    musculus: [s('D',0,.42),null,s('D',0,.35),null,s('D',0,.42),null,s('D',0,.35),null,s('D',0,.42),null,s('D',0,.35,1),null,s('D',0,.42),null,s('D',0,.35),null],
+    os:       [sb('D',0,.95),null,null,null,sb('D',0,.92),null,null,null,sb('D',0,.95),null,null,null,sb('D',0,.92),null,null,null],
+    vena:     [s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12)],
+    pulmo:    [s('D',0,.45),null,null,null,null,null,null,null,s('D',4,.42),null,null,null,null,null,null,null],
+    lingua:   [s('D',0,.82),s('D',0,.55),null,s('D',6,.7,1),s('D',0,.78),null,s('D',0,.55),null,s('D',3,.8),s('D',3,.55),null,s('D',6,.72,1),s('D',0,.75),null,s('D',0,.5),s('D',0,.42)],
   },
   lawrence:{
     costa:    [s('F',0,.8),null,null,null,s('F',0,.8),null,null,null,s('F',0,.75),null,null,null,s('F',0,.8),null,null,null],
