@@ -1913,6 +1913,8 @@ function scheduleStep(step,time){
     const sd=v.pattern&&v.pattern[step];if(!sd)continue;
     let vt=t;
     if(v.saint.id==='symeon')vt+=getDillaOffset(step);
+    // Bartholomew drag: non-kick voices land 20-35ms behind the beat (screwed feel)
+    if(v.saint.id==='bartholomew'&&v.relic.role!=='kick')vt+=0.020+Math.random()*0.015;
     triggerVoice(v,vt,step,sd);
   }
   if(auditionVoice){const sd=auditionVoice.pattern&&auditionVoice.pattern[step];if(sd)triggerVoice(auditionVoice,t,step,sd);}
@@ -2047,87 +2049,99 @@ function makeBitCrush(c,out,t,hz,vel,dur,asNoise){
 // ══════ PER-SAINT SYNTH FUNCTIONS ══════
 
 function synthBarth(c,v,t,dur,hz,vel,acc,slide,step){
+  // CHOPPED & SCREWED Blue Monday — everything pitched down, slowed, syrupy
+  // Frequencies scaled by 0.667 (7 semitones down), envelopes stretched,
+  // filter sweeps become slow-motion "bwwwooowww"
   const o=_out(v),rid=v.relic.role;
+  const screwF=0.667;// pitch-down factor: 7 semitones
+  const shz=hz*screwF;// screwed root frequency
   if(rid==='rhythm'){
-    // Nervus — Oberheim DMX snare: tight noise burst + body tone
-    const bl=Math.floor(c.sampleRate*0.09);
+    // Nervus — screwed DMX snare: softened transient, longer body, pitched-down noise
+    const bl=Math.floor(c.sampleRate*0.16);// longer decay (was 0.09)
     const buf=c.createBuffer(1,bl,c.sampleRate);const d=buf.getChannelData(0);
-    for(let i=0;i<bl;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bl,0.6);
+    for(let i=0;i<bl;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bl,0.4);// slower decay curve
     const src=c.createBufferSource();src.buffer=buf;
-    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=3200;bp.Q.value=1.2;
-    const ne=c.createGain();ne.gain.setValueAtTime(vel*0.52,t);ne.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2100;bp.Q.value=1;// lower (was 3200)
+    const ne=c.createGain();ne.gain.setValueAtTime(vel*0.42,t);ne.gain.exponentialRampToValueAtTime(0.001,t+0.2);
     src.connect(bp);bp.connect(ne);ne.connect(o);src.start(t);
-    // Pitched body — triangle at 180Hz, fast decay
-    const tn=c.createOscillator();tn.type='triangle';tn.frequency.setValueAtTime(180,t);tn.frequency.exponentialRampToValueAtTime(100,t+0.015);
-    const te=c.createGain();te.gain.setValueAtTime(vel*0.4,t);te.gain.exponentialRampToValueAtTime(0.001,t+0.04);
-    tn.connect(te);te.connect(o);tn.start(t);tn.stop(t+0.05);
+    // Body tone — lower, tom-like
+    const tn=c.createOscillator();tn.type='triangle';
+    tn.frequency.setValueAtTime(120,t);tn.frequency.exponentialRampToValueAtTime(65,t+0.03);
+    const te=c.createGain();te.gain.setValueAtTime(vel*0.35,t);te.gain.exponentialRampToValueAtTime(0.001,t+0.08);
+    tn.connect(te);te.connect(o);tn.start(t);tn.stop(t+0.1);
   }else if(rid==='rhythm2'){
-    // Musculus — crisp electronic hi-hat: 6 detuned square oscillators (Oberheim method)
-    // Musculus — closed hi-hat: softer, less tinny, more body
-    const freqs=[800,1342,2843,3848,5765,8090];
-    const eg=c.createGain();const len=acc?0.15:0.03;
-    eg.gain.setValueAtTime(vel*0.12,t);eg.gain.exponentialRampToValueAtTime(0.001,t+len);
-    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=4000;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=12000;// tame the top
+    // Musculus — screwed hi-hat: dull, sloshy, lazy. Pitched-down metallic partials
+    const freqs=[530,895,1895,2565,3840,5390];// all ×0.667
+    const eg=c.createGain();const len=acc?0.25:0.06;// longer (was 0.15/0.03)
+    eg.gain.setValueAtTime(vel*0.10,t);eg.gain.exponentialRampToValueAtTime(0.001,t+len);
+    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=2600;// lower (was 4000)
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=7000;// lower (was 12000)
     eg.connect(hp);hp.connect(lp);lp.connect(o);
     freqs.forEach(f=>{const sq=c.createOscillator();sq.type='square';sq.frequency.value=f;sq.connect(eg);sq.start(t);sq.stop(t+len+0.01);});
   }else if(rid==='kick'){
-    // Os — DMX kick: sharp sine pitch drop, tight and punchy
+    // Os — screwed DMX kick: deep sub-bass bloom, slow boomy thud
     const k=c.createOscillator();k.type='sine';
-    k.frequency.setValueAtTime(150,t);k.frequency.exponentialRampToValueAtTime(38,t+0.045);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.78,t+0.001);
-    e.gain.setTargetAtTime(0.001,t+0.001,0.065);
-    k.connect(e);e.connect(o);k.start(t);k.stop(t+0.2);
-    // Transient click
-    const cl=c.createOscillator();cl.type='square';cl.frequency.value=1200;
-    const ce=c.createGain();ce.gain.setValueAtTime(vel*0.2,t);ce.gain.exponentialRampToValueAtTime(0.001,t+0.003);
-    cl.connect(ce);ce.connect(o);cl.start(t);cl.stop(t+0.006);
+    k.frequency.setValueAtTime(100,t);// lower start (was 150)
+    k.frequency.exponentialRampToValueAtTime(28,t+0.08);// slower drop, lower floor (was 38 in 0.045)
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.82,t+0.002);
+    e.gain.setTargetAtTime(0.001,t+0.002,0.12);// longer bloom (was 0.065)
+    k.connect(e);e.connect(o);k.start(t);k.stop(t+0.35);
+    // Softer click — lower, duller
+    const cl=c.createOscillator();cl.type='sine';cl.frequency.value=600;// was square at 1200
+    const ce=c.createGain();ce.gain.setValueAtTime(vel*0.12,t);ce.gain.exponentialRampToValueAtTime(0.001,t+0.006);
+    cl.connect(ce);ce.connect(o);cl.start(t);cl.stop(t+0.01);
   }else if(rid==='clock'){
-    // Vena — cold 16th pulse: short filtered square, relentless metronome
-    const ck=c.createOscillator();ck.type='square';ck.frequency.value=hz*6;
-    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1800;bp.Q.value=3;
-    const e=c.createGain();e.gain.setValueAtTime(vel*0.15,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.012);
-    ck.connect(bp);bp.connect(e);e.connect(o);ck.start(t);ck.stop(t+0.018);
+    // Vena — screwed pulse: duller, slightly behind, lazy tick
+    const ck=c.createOscillator();ck.type='square';ck.frequency.value=shz*4;// lower
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1200;bp.Q.value=2;
+    const e=c.createGain();e.gain.setValueAtTime(vel*0.10,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.02);
+    ck.connect(bp);bp.connect(e);e.connect(o);ck.start(t);ck.stop(t+0.025);
   }else if(rid==='breath'){
-    // Pulmo — Juno-60 string pad: slow chorus, cold and wide
-    const notes=[hz,hz*1.5,hz*2];
+    // Pulmo — screwed Juno pad: woozy, pitched-down, slow chorus drift
+    const notes=[shz,shz*1.5,shz*2];
     notes.forEach(n=>{
-      const o1=c.createOscillator();o1.type='sawtooth';o1.frequency.value=n;o1.detune.value=humanize(-7,0.5);
-      const o2=c.createOscillator();o2.type='sawtooth';o2.frequency.value=n;o2.detune.value=humanize(7,0.5);
-      // Slow chorus LFO per voice
-      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.4+Math.random()*0.3;
-      const lg=c.createGain();lg.gain.value=4;lfo.connect(lg);lg.connect(o1.detune);lg.connect(o2.detune);
-      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=n*3;lp.Q.value=0.5;
-      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.06,t+0.15);
-      e.gain.setTargetAtTime(vel*0.04,t+0.15,dur);
+      const o1=c.createOscillator();o1.type='sawtooth';o1.frequency.value=n;o1.detune.value=humanize(-10,0.5);
+      const o2=c.createOscillator();o2.type='sawtooth';o2.frequency.value=n;o2.detune.value=humanize(10,0.5);
+      // Woozy chorus — slower LFO, wider detune (screwed character)
+      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.2+Math.random()*0.15;// slower
+      const lg=c.createGain();lg.gain.value=7;// wider wobble
+      lfo.connect(lg);lg.connect(o1.detune);lg.connect(o2.detune);
+      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=n*2.5;lp.Q.value=0.7;
+      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.07,t+0.2);
+      e.gain.setTargetAtTime(vel*0.05,t+0.2,dur);
       e.gain.exponentialRampToValueAtTime(0.001,t+dur*4);
       o1.connect(lp);o2.connect(lp);lp.connect(e);e.connect(o);
       o1.start(t);o2.start(t);lfo.start(t);o1.stop(t+dur*4);o2.stop(t+dur*4);lfo.stop(t+dur*4);
     });
   }else if(rid==='lead'){
-    // Lingua — Moog Source bass: 2 saws (octave apart), resonant LP with fast attack envelope
-    // This IS the Blue Monday bassline voice — thick, driving, "bwow" filter character
-    const saw1=c.createOscillator();saw1.type='sawtooth';saw1.frequency.value=hz;
-    const saw2=c.createOscillator();saw2.type='sawtooth';saw2.frequency.value=hz*0.5;// sub octave
-    saw2.detune.value=2;// slight thickening
+    // Lingua — screwed Moog bass: slow-motion "bwwwooowww" filter sweep
+    // The envelope stretches: 300ms sweep instead of 60ms. Deep, rubbery, syrupy.
+    const saw1=c.createOscillator();saw1.type='sawtooth';saw1.frequency.value=shz;
+    const saw2=c.createOscillator();saw2.type='sawtooth';saw2.frequency.value=shz*0.5;
+    saw2.detune.value=3;
+    // Tape wow: slow pitch drift on both saws
+    const wow=c.createOscillator();wow.type='sine';wow.frequency.value=0.7;
+    const wg=c.createGain();wg.gain.value=5;// ±5 cents wobble
+    wow.connect(wg);wg.connect(saw1.detune);wg.connect(saw2.detune);
     const mix=c.createGain();mix.gain.value=1;
     saw1.connect(mix);saw2.connect(mix);
-    // Resonant filter — aggressive "bwow", wide sweep
+    // Slow-motion filter sweep — THE screwed "bwwwooowww"
     const lp=c.createBiquadFilter();lp.type='lowpass';
-    lp.Q.value=acc?16:12;
-    const peak=hz*(acc?14:8);// wider sweep for more pronounced squelch
+    lp.Q.value=acc?14:10;
+    const peak=shz*(acc?12:7);
     lp.frequency.setValueAtTime(peak,t);
-    lp.frequency.exponentialRampToValueAtTime(hz*1.5,t+0.06);// faster snap
-    lp.frequency.setTargetAtTime(hz*0.5,t+0.06,0.12);
-    // Amp: the bass should be THE dominant voice
+    lp.frequency.exponentialRampToValueAtTime(shz*1.8,t+0.3);// SLOW sweep (was 0.06s)
+    lp.frequency.setTargetAtTime(shz*0.4,t+0.3,0.25);// longer tail
     const e=c.createGain();e.gain.setValueAtTime(0,t);
-    e.gain.linearRampToValueAtTime(vel*0.75,t+0.002);
-    e.gain.setTargetAtTime(vel*0.52,t+0.002,dur*0.35);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
+    e.gain.linearRampToValueAtTime(vel*0.78,t+0.003);
+    e.gain.setTargetAtTime(vel*0.55,t+0.003,dur*0.5);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
     mix.connect(lp);lp.connect(e);e.connect(o);
-    saw1.start(t);saw2.start(t);saw1.stop(t+dur*1.5+0.02);saw2.stop(t+dur*1.5+0.02);
+    saw1.start(t);saw2.start(t);wow.start(t);
+    saw1.stop(t+dur*1.8+0.02);saw2.stop(t+dur*1.8+0.02);wow.stop(t+dur*1.8+0.02);
   }else{
-    makeGatedSaw(c,o,t,hz,vel*1.3,hz*2.2,10);
+    makeGatedSaw(c,o,t,hz*screwF,vel*1.2,hz*2,8);
   }
 }
 
@@ -2788,7 +2802,27 @@ const SYNTH_FNS={
 // ══════ VOICE BUILDER ══════
 function buildVoice(relic,saint,outputNode){
   const c=AC.ctx,vg=c.createGain();vg.gain.value=0.7;
-  vg.connect(outputNode||AC.master);
+  let dest=outputNode||AC.master;
+  if(saint.id==='bartholomew'){
+    // Chopped & screwed signal chain: voice → lowpass (underwater) → flanger → dest
+    // LP at 3500 Hz — screwed tapes lose all air
+    const screwLP=c.createBiquadFilter();screwLP.type='lowpass';screwLP.frequency.value=3500;screwLP.Q.value=0.8;
+    // Flanger: slow sweep, subtle feedback, syrupy movement
+    const flDry=c.createGain();flDry.gain.value=0.65;
+    const flWet=c.createGain();flWet.gain.value=0.35;
+    const flDelay=c.createDelay(0.02);flDelay.delayTime.value=0.003;
+    const flFb=c.createGain();flFb.gain.value=0.3;
+    const flLfo=c.createOscillator();flLfo.type='sine';flLfo.frequency.value=0.15;
+    const flLfoG=c.createGain();flLfoG.gain.value=0.002;
+    flLfo.connect(flLfoG);flLfoG.connect(flDelay.delayTime);flLfo.start();
+    flDelay.connect(flFb);flFb.connect(flDelay);// feedback loop
+    flDelay.connect(flWet);
+    screwLP.connect(flDry);screwLP.connect(flDelay);
+    flDry.connect(dest);flWet.connect(dest);
+    vg.connect(screwLP);
+  }else{
+    vg.connect(dest);
+  }
   if(saint.id!=='bartholomew'&&relic.id!=='patella')vg.connect(AC.reverbSend);
   const pattern=(PATTERNS[saint.id]&&PATTERNS[saint.id][relic.id])||null;
   const synthFn=(relic.type==='modifier')?null:SYNTH_FNS[saint.id]||null;
