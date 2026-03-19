@@ -2164,22 +2164,75 @@ function synthBarth(c,v,t,dur,hz,vel,acc,slide,step){
     mix.connect(lp);lp.connect(e);e.connect(o);
     saw1.start(t);saw2.start(t);wow.start(t);
     saw1.stop(t+dur*1.8+0.02);saw2.stop(t+dur*1.8+0.02);wow.stop(t+dur*1.8+0.02);
+  }else if(rid==='modifier'&&v.relic.id==='viscera'){
+    // Viscera — internal organs churning: low filtered rumble with slow modulation
+    const r=c.createOscillator();r.type='sawtooth';r.frequency.value=shz*0.25;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=200;lp.Q.value=3;
+    const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.4;
+    const lg=c.createGain();lg.gain.value=80;lfo.connect(lg);lg.connect(lp.frequency);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.25,t+0.05);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
+    r.connect(lp);lp.connect(e);e.connect(o);r.start(t);lfo.start(t);r.stop(t+dur*2.1);lfo.stop(t+dur*2.1);
+  }else if(rid==='modifier'&&v.relic.id==='oculus_b'){
+    // Oculus — the watching eye: high sine ping with slow phaser, eerie awareness
+    const s=c.createOscillator();s.type='sine';s.frequency.value=shz*3;
+    const ap=c.createBiquadFilter();ap.type='allpass';ap.frequency.value=600;
+    const pLfo=c.createOscillator();pLfo.type='sine';pLfo.frequency.value=0.2;
+    const pg=c.createGain();pg.gain.value=300;pLfo.connect(pg);pg.connect(ap.frequency);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.15,t+0.02);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
+    s.connect(ap);ap.connect(e);e.connect(o);s.start(t);pLfo.start(t);s.stop(t+dur*1.6);pLfo.stop(t+dur*1.6);
+  }else if(rid==='modifier'&&v.relic.id==='pellis'){
+    // Pellis — flayed skin: dry scraping texture, bandpassed noise with pitch envelope
+    const bl=Math.floor(c.sampleRate*0.08);
+    const buf=c.createBuffer(1,bl,c.sampleRate);const d=buf.getChannelData(0);
+    for(let i=0;i<bl;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bl,1.5);
+    const src=c.createBufferSource();src.buffer=buf;
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.Q.value=4;
+    bp.frequency.setValueAtTime(2000,t);bp.frequency.exponentialRampToValueAtTime(600,t+0.07);
+    const e=c.createGain();e.gain.setValueAtTime(vel*0.2,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.1);
+    src.connect(bp);bp.connect(e);e.connect(o);src.start(t);
   }else{
     makeGatedSaw(c,o,t,hz*screwF,vel*1.2,hz*2,8);
   }
 }
 
 function synthLawr(c,v,t,dur,hz,vel,acc,slide,step){
-  const rid=v.relic.role;
-  if(rid==='bass'){makeSaw(c,_out(v),t,hz,vel,dur*1.5,velBright(hz,vel,3,4),3,4);}
-  else if(rid==='fire'){makeNoise(c,_out(v),t,vel,0.06,1200,400);}
-  else if(rid==='hihat'){makeNoise(c,_out(v),t,vel*0.7,0.03,null,2200);}
-  else if(rid==='bell'){makeFMBell(c,_out(v),t,hz,vel,3.5,0.3);}
-  else if(rid==='sub'){makeSub(c,_out(v),t,hz*0.5,vel,dur);}
-  else if(rid==='texture'){makeNoise(c,_out(v),t,vel*0.35,dur*2,600,120);}
-  else if(rid==='lead'){makeSaw(c,_out(v),t,hz,vel,dur*1.3,velBright(hz,vel,3,4),1.2,3);}
-  else if(rid==='accent'){makeFMBell(c,_out(v),t,hz,vel*0.7,3.5,0.08);}
-  else{makeSaw(c,_out(v),t,hz,vel,dur,hz*4,2,0);}
+  const rid=v.relic.role,o=_out(v);
+  if(rid==='bass'){
+    // Costa — warm sizzling bass, the fat dripping from the gridiron
+    makeSaw(c,o,t,hz,vel,dur*1.5,velBright(hz,vel,3,4),3,4);
+  }else if(rid==='fire'){
+    // Caro — crackling flesh, filtered noise bursts
+    makeNoise(c,o,t,vel,0.06,1200,400);
+  }else if(rid==='hihat'){
+    // Ignis — fire crackle as hi-hat
+    makeNoise(c,o,t,vel*0.7,0.03,null,2200);
+  }else if(rid==='bell'){
+    // Ferrum — iron gridiron resonance, metallic ring
+    makeFMBell(c,o,t,hz*2,vel,2.76,0.5);// higher pitch, longer, different ratio than accent
+  }else if(rid==='clock'){
+    // Cor — the patient heart: deep 808-style kick, slow and heavy
+    const k=c.createOscillator();k.type='sine';
+    k.frequency.setValueAtTime(hz*0.8,t);k.frequency.exponentialRampToValueAtTime(hz*0.25,t+0.08);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.72,t+0.003);
+    e.gain.setTargetAtTime(0.001,t+0.003,0.1);
+    k.connect(e);e.connect(o);k.start(t);k.stop(t+0.3);
+  }else if(rid==='sub'){
+    // Adeps — bubbling sub-bass, fat rendering
+    makeSub(c,o,t,hz*0.5,vel,dur);
+  }else if(rid==='texture'){
+    // Fumvs — rising smoke, long filtered breath
+    makeNoise(c,o,t,vel*0.35,dur*2,600,120);
+  }else if(rid==='lead'){
+    // Manus — plucked melodic line, the hand turning the body
+    makeSaw(c,o,t,hz,vel,dur*1.3,velBright(hz,vel,3,4),1.2,3);
+  }else if(rid==='accent'){
+    // Sal — bright crystalline wit
+    makeFMBell(c,o,t,hz*3,vel*0.6,5.1,0.06);// much higher, shorter, different ratio
+  }else{
+    makeSaw(c,o,t,hz,vel,dur,hz*4,2,0);
+  }
 }
 
 function synthCath(c,v,t,dur,hz,vel,acc,slide,step){
@@ -2721,6 +2774,9 @@ const PATTERNS={
     vena:     [s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12),s('D',0,.18),s('D',0,.12)],
     pulmo:    [s('D',0,.65),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
     lingua:   [s('D',0,.82),s('D',0,.55),null,s('D',6,.7,1),s('D',0,.78),null,s('D',0,.55),null,s('D',3,.8),s('D',3,.55),null,s('D',6,.72,1),s('D',0,.75),null,s('D',0,.5),s('D',0,.42)],
+    viscera:  [s('D',0,.5),null,null,null,null,null,null,null,s('D',0,.45),null,null,null,null,null,null,null],
+    oculus_b: [null,null,null,null,null,null,s('D',0,.4),null,null,null,null,null,null,null,s('D',0,.35),null],
+    pellis:   [null,null,s('D',0,.45),null,null,null,null,null,null,null,s('D',0,.4),null,null,null,null,null],
   },
   lawrence:{
     costa:    [s('F',0,.8),null,null,null,s('F',0,.8),null,null,null,s('F',0,.75),null,null,null,s('F',0,.8),null,null,null],
@@ -2859,7 +2915,7 @@ function buildVoice(relic,saint,outputNode){
   }
   if(saint.id!=='bartholomew'&&relic.id!=='patella')vg.connect(AC.reverbSend);
   const pattern=(PATTERNS[saint.id]&&PATTERNS[saint.id][relic.id])||null;
-  const synthFn=(relic.type==='modifier')?null:SYNTH_FNS[saint.id]||null;
+  const synthFn=SYNTH_FNS[saint.id]||null;
   return{output:vg,pattern,synthFn,saint,relic};
 }
 
