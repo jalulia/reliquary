@@ -2063,11 +2063,13 @@ function synthBarth(c,v,t,dur,hz,vel,acc,slide,step){
     tn.connect(te);te.connect(o);tn.start(t);tn.stop(t+0.05);
   }else if(rid==='rhythm2'){
     // Musculus — crisp electronic hi-hat: 6 detuned square oscillators (Oberheim method)
+    // Musculus — closed hi-hat: softer, less tinny, more body
     const freqs=[800,1342,2843,3848,5765,8090];
-    const eg=c.createGain();const len=acc?0.18:0.035;
-    eg.gain.setValueAtTime(vel*0.28,t);eg.gain.exponentialRampToValueAtTime(0.001,t+len);
-    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=6500;
-    eg.connect(hp);hp.connect(o);
+    const eg=c.createGain();const len=acc?0.15:0.03;
+    eg.gain.setValueAtTime(vel*0.12,t);eg.gain.exponentialRampToValueAtTime(0.001,t+len);
+    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=4000;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=12000;// tame the top
+    eg.connect(hp);hp.connect(lp);lp.connect(o);
     freqs.forEach(f=>{const sq=c.createOscillator();sq.type='square';sq.frequency.value=f;sq.connect(eg);sq.start(t);sq.stop(t+len+0.01);});
   }else if(rid==='kick'){
     // Os — DMX kick: sharp sine pitch drop, tight and punchy
@@ -2110,17 +2112,17 @@ function synthBarth(c,v,t,dur,hz,vel,acc,slide,step){
     saw2.detune.value=2;// slight thickening
     const mix=c.createGain();mix.gain.value=1;
     saw1.connect(mix);saw2.connect(mix);
-    // Resonant filter — the "bwow"
+    // Resonant filter — aggressive "bwow", wide sweep
     const lp=c.createBiquadFilter();lp.type='lowpass';
-    lp.Q.value=acc?14:10;// high resonance = that vocal squelch
-    const peak=hz*(acc?10:6);
+    lp.Q.value=acc?16:12;
+    const peak=hz*(acc?14:8);// wider sweep for more pronounced squelch
     lp.frequency.setValueAtTime(peak,t);
-    lp.frequency.exponentialRampToValueAtTime(hz*1.2,t+0.08);// fast close
-    lp.frequency.setTargetAtTime(hz*0.6,t+0.08,0.15);// slow tail
-    // Amp: punchy attack, sustained body, clean release
+    lp.frequency.exponentialRampToValueAtTime(hz*1.5,t+0.06);// faster snap
+    lp.frequency.setTargetAtTime(hz*0.5,t+0.06,0.12);
+    // Amp: the bass should be THE dominant voice
     const e=c.createGain();e.gain.setValueAtTime(0,t);
-    e.gain.linearRampToValueAtTime(vel*0.62,t+0.003);
-    e.gain.setTargetAtTime(vel*0.42,t+0.003,dur*0.4);
+    e.gain.linearRampToValueAtTime(vel*0.75,t+0.002);
+    e.gain.setTargetAtTime(vel*0.52,t+0.002,dur*0.35);
     e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
     mix.connect(lp);lp.connect(e);e.connect(o);
     saw1.start(t);saw2.start(t);saw1.stop(t+dur*1.5+0.02);saw2.stop(t+dur*1.5+0.02);
