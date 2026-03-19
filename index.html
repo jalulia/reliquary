@@ -1796,7 +1796,9 @@ let SWING={active:false,amount:0};
 const ROOM={ctx:null,busSend:null,convolver:null,busWet:null,busDry:null,masterGain:null};
 
 function initAudio(){
-  const c=new(window.AudioContext||window.webkitAudioContext)();AC.ctx=c;
+  const c=new(window.AudioContext||window.webkitAudioContext)();
+  if(c.state==='suspended')c.resume();
+  AC.ctx=c;
   AC.analyser=c.createAnalyser();AC.analyser.fftSize=256;AC.analyser.connect(c.destination);
   AC.masterLPF=c.createBiquadFilter();AC.masterLPF.type='lowpass';AC.masterLPF.frequency.value=18000;AC.masterLPF.connect(AC.analyser);
   AC.comp=c.createDynamicsCompressor();AC.comp.threshold.value=-18;AC.comp.ratio.value=2;AC.comp.attack.value=0.01;AC.comp.release.value=0.15;AC.comp.connect(AC.masterLPF);
@@ -3425,6 +3427,9 @@ function drawViz(){
 
 // ══════ INIT ══════
 function beginApp(){
+  // Init audio on user gesture (required for iOS/mobile)
+  if(!AC.ctx){initAudio();startSequencer();}
+  else if(AC.ctx.state==='suspended')AC.ctx.resume();
   document.getElementById('landing').classList.add('hidden');
   document.getElementById('app').classList.add('active');
   selectSaint(0);renderSlots();renderAuth();drawViz();rippleLoop();resetIdleTimer();
