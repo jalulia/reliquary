@@ -312,16 +312,40 @@ border:none;opacity:0;transition:opacity .15s;background:transparent;overflow:hi
 #visualizer{position:absolute;bottom:0;left:0;right:0;height:60px;pointer-events:none;opacity:.25}
 @media(max-width:960px){#authenticum{display:none}}
 @media(max-width:640px){
-#app.active{flex-direction:column}
-#catalogue{width:100%;height:auto;max-height:42vh;border-right:none;border-bottom:1px solid var(--w10)}
-#reliquary-panel{min-height:58vh}
-.slot{width:52px;height:52px}
+#app.active{flex-direction:column;overflow-y:auto;overflow-x:hidden}
+#catalogue{width:100%;height:auto;max-height:none;border-right:none;border-bottom:1px solid var(--w10);
+flex-shrink:0;overflow:visible}
+#cat-header{padding:.6em .8em .3em}
+#cat-header h2{font-size:.9rem}
+#carousel-wrap{padding:0}
+#carousel{gap:.2em;padding:.3em .5em}
+.saint-chip{padding:.15em .35em;font-size:.5rem}
+.saint-chip .saint-icon{width:11px;height:11px}
+#saint-info{padding:.3em .8em;min-height:2em}
+#saint-name{font-size:1.1rem}
+#saint-key{font-size:.5rem;padding:.1em .35em}
+#saint-vibe{font-size:.65rem}
+#relic-cabinet-wrap{padding:.4em .5em;max-height:none;overflow:visible}
+#relic-cabinet{grid-template-columns:repeat(3,1fr);gap:.4em}
+.cabinet-niche{aspect-ratio:.9;border-radius:4px 4px 1px 1px}
+.cabinet-niche .relic-img{width:78%;height:78%}
+.cabinet-niche .relic-label{font-size:.35rem;letter-spacing:.06em}
+#reliquary-panel{min-height:80vw;height:auto;flex-shrink:0}
+#reliquary-frame{min-height:80vw}
+.slot{width:42px;height:42px}
+.slot-label{font-size:.28rem}
+#body-svg{max-width:65%;margin:0 auto}
 .votive{position:static;transform:none;display:inline-flex}
 .votive:hover{transform:scale(1.08)}
 .votive.active{animation:none}
-.votive-icon{width:32px;height:32px}
-#votive-row{display:flex;justify-content:center;gap:.5em;flex-wrap:wrap;padding:.4em 0}
-#locus-label{position:static;transform:none;margin-top:.3em}
+.votive-icon{width:28px;height:28px}
+.votive-label{font-size:.3rem}
+#votive-row{display:flex;justify-content:center;gap:.4em;flex-wrap:wrap;padding:.3em 0}
+#locus-label{position:static;transform:none;margin-top:.3em;font-size:.55rem}
+#idle-msg{font-size:.55rem}
+#body-title{font-size:.5rem}
+#authenticum{display:none}
+.reliquary-border svg{min-height:80vw}
 }
 </style>
 </head>
