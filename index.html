@@ -3453,9 +3453,9 @@ function rippleLoop(){requestAnimationFrame(rippleLoop);for(const[limb,st]of Obj
 // ══════ RELIC PREVIEW ══════
 function playRelicPreview(relic,saint){
   if(!AC.ctx)return;
-  const synthFn=relic.type==='modifier'?null:SYNTH_FNS[saint.id];
+  const synthFn=SYNTH_FNS[saint.id];
   if(!synthFn){
-    // Modifiers get a soft confirmation click
+    // Saints without synth functions get a soft confirmation click
     const c=AC.ctx,t=c.currentTime;
     const o=c.createOscillator();o.type='sine';o.frequency.value=saint.freq*2;
     const e=c.createGain();e.gain.setValueAtTime(0.1,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.12);
