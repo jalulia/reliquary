@@ -18,7 +18,8 @@
 }
 html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--w60);
 cursor:default;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
-touch-action:none;font-family:'IBM Plex Mono',monospace;font-weight:300;font-size:14px}
+touch-action:none;overscroll-behavior:none;-webkit-overflow-scrolling:touch;
+font-family:'IBM Plex Mono',monospace;font-weight:300;font-size:14px}
 #landing{position:fixed;inset:0;z-index:1000;background:var(--bg);
 display:flex;flex-direction:column;align-items:center;justify-content:center;
 transition:opacity 1s ease,visibility 1s ease}
@@ -303,6 +304,10 @@ font-family:'Instrument Serif',serif;font-style:italic;font-size:.45rem;
 color:rgba(218,165,32,0);letter-spacing:.1em;text-align:center;transition:color 2s ease;
 white-space:nowrap;z-index:5}
 #locus-label.revealed{color:rgba(218,165,32,.55)}
+/* Tap-to-place states */
+.cabinet-niche.tap-selected{outline:2px solid var(--saint-color);outline-offset:1px;opacity:1!important}
+.slot.tap-ready{animation:tapPulse 1s ease-in-out infinite}
+@keyframes tapPulse{0%,100%{box-shadow:0 0 4px rgba(255,255,255,.1)}50%{box-shadow:0 0 12px rgba(255,255,255,.3)}}
 #drag-ghost{position:fixed;pointer-events:none;z-index:9999;width:56px;height:56px;
 border-radius:8px;display:none;align-items:center;justify-content:center;
 border:none;opacity:0;transition:opacity .15s;background:transparent;overflow:hidden}
@@ -319,9 +324,9 @@ flex-shrink:0;overflow:hidden;touch-action:none}
 #cat-header{padding:.4em .6em .2em}
 #cat-header h2{font-size:.8rem}
 #carousel-wrap{padding:0}
-#carousel{gap:.15em;padding:.25em .4em}
-.saint-chip{padding:.12em .3em;font-size:.45rem}
-.saint-chip .saint-icon{width:10px;height:10px}
+#carousel{gap:.2em;padding:.3em .4em}
+.saint-chip{padding:.25em .5em;font-size:.55rem;min-height:32px}
+.saint-chip .saint-icon{width:14px;height:14px}
 #saint-info{padding:.2em .6em;min-height:1.6em}
 #saint-name{font-size:.9rem}
 #saint-key{font-size:.45rem;padding:.08em .3em}
@@ -337,16 +342,16 @@ flex-shrink:0;overflow:hidden;touch-action:none}
 #reliquary-frame{height:100%;min-height:0}
 .reliquary-border svg{height:100%}
 
-/* ── Slots: smaller for mobile ── */
-.slot{width:36px;height:36px}
-.slot-label{font-size:.24rem}
+/* ── Slots: touch-friendly size ── */
+.slot{width:42px;height:42px}
+.slot-label{font-size:.26rem}
 .slot-relic-img{width:92%;height:92%}
 
 /* ── Drag ghost: smaller on mobile ── */
 #drag-ghost{width:36px;height:36px}
 
-/* ── Saint SVG ── */
-#body-svg{max-width:60%;margin:0 auto}
+/* ── Saint SVG: bigger for fat finger targeting ── */
+#body-svg{max-width:75%;margin:0 auto}
 
 /* ── Votives: tiny row below frame, not overlapping saint ── */
 .votive{position:static;transform:none;display:inline-flex;padding:.15em}
@@ -1936,7 +1941,7 @@ function updateDensity(){
   if(maxCount>0){
     Object.values(VOICES).forEach(v=>{
       const count=saintCounts[v.saint.id]||0;
-      const targetGain=count===maxCount?0.7:0.7*0.4;// minority saints duck to 40%
+      const targetGain=count===maxCount?0.7:0.7*0.65;// minority saints duck to 65% (was 40% — too crushing)
       v.output.gain.setTargetAtTime(targetGain,t,0.3);
     });
   }
@@ -2087,16 +2092,23 @@ function makeSub(c,out,t,hz,vel,dur){
   o.connect(e);e.connect(out);o.start(t);o.stop(t+dur*2+0.05);
 }
 
+// Pre-allocated noise buffer (1 second of white noise, reused by all triggers)
+let _whiteBuf=null;
+function getWhiteNoise(ctx){
+  if(_whiteBuf)return _whiteBuf;
+  const len=ctx.sampleRate;// 1 second
+  _whiteBuf=ctx.createBuffer(1,len,ctx.sampleRate);
+  const d=_whiteBuf.getChannelData(0);
+  for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+  return _whiteBuf;
+}
 function makeNoise(c,out,t,vel,dur,lpF,hpF){
-  const bl=Math.floor(c.sampleRate*Math.max(dur,0.06));
-  const buf=c.createBuffer(1,bl,c.sampleRate);
-  const d=buf.getChannelData(0);for(let i=0;i<bl;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bl,1.5);
-  const src=c.createBufferSource();src.buffer=buf;
+  const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
   const e=c.createGain();e.gain.setValueAtTime(vel*0.45,t);e.gain.exponentialRampToValueAtTime(0.001,t+Math.max(dur,0.04));
   let node=src;
   if(hpF){const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=hpF;src.connect(hp);node=hp;}
   if(lpF){const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=lpF;node.connect(lp);lp.connect(e);}else{node.connect(e);}
-  e.connect(out);src.start(t);
+  e.connect(out);src.start(t);src.stop(t+Math.max(dur,0.06)+0.02);
 }
 
 function makeSaw(c,out,t,hz,vel,dur,lpF,Q,extraDetune){
@@ -2174,11 +2186,7 @@ function makeAcid(c,out,t,hz,vel,dur,acc,slide,v){
 }
 
 function makeBitCrush(c,out,t,hz,vel,dur,asNoise){
-  const bl=Math.floor(c.sampleRate*(asNoise?dur*0.8:dur));
-  const buf=c.createBuffer(1,Math.max(bl,1),c.sampleRate);
-  const d=buf.getChannelData(0);
-  for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);
-  const src=c.createBufferSource();src.buffer=buf;
+  const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
   const ws=c.createWaveShaper();
   const curve=new Float32Array(256);
   for(let i=0;i<256;i++){const x=(i/128)-1;curve[i]=Math.round(x*8)/8;}
@@ -2186,7 +2194,7 @@ function makeBitCrush(c,out,t,hz,vel,dur,asNoise){
   const bp=c.createBiquadFilter();bp.type='bandpass';
   bp.frequency.value=asNoise?1600:hz*2;bp.Q.value=2;
   const e=c.createGain();e.gain.setValueAtTime(vel*0.3,t);e.gain.exponentialRampToValueAtTime(0.001,t+Math.max(dur,0.04));
-  src.connect(ws);ws.connect(bp);bp.connect(e);e.connect(out);src.start(t);
+  src.connect(ws);ws.connect(bp);bp.connect(e);e.connect(out);src.start(t);src.stop(t+Math.max(dur,0.06)+0.02);
 }
 
 // ══════ PER-SAINT SYNTH FUNCTIONS ══════
@@ -2320,36 +2328,118 @@ function synthBarth(c,v,t,dur,hz,vel,acc,slide,step){
 function synthLawr(c,v,t,dur,hz,vel,acc,slide,step){
   const rid=v.relic.role,o=_out(v);
   if(rid==='bass'){
-    // Costa — warm sizzling bass, the fat dripping from the gridiron
-    makeSaw(c,o,t,hz,vel,dur*1.5,velBright(hz,vel,3,4),3,4);
+    // Costa — sizzling gridiron bass: distorted saw through waveshaper, overtone-heavy
+    const s1=c.createOscillator();s1.type='sawtooth';s1.frequency.value=hz;s1.detune.value=-3;
+    const s2=c.createOscillator();s2.type='sawtooth';s2.frequency.value=hz;s2.detune.value=3;
+    // Waveshaper — iron-hot saturation
+    const ws=c.createWaveShaper();const curve=new Float32Array(256);
+    for(let i=0;i<256;i++){const x=(i/128)-1;curve[i]=Math.tanh(x*3);}
+    ws.curve=curve;ws.oversample='2x';
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=4;
+    lp.frequency.setValueAtTime(hz*8,t);lp.frequency.exponentialRampToValueAtTime(hz*2,t+dur*0.6);
+    lp.frequency.setTargetAtTime(hz*1.5,t+dur*0.6,dur*0.4);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.42,t+0.006);
+    e.gain.setTargetAtTime(vel*0.25,t+0.006,dur*0.4);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
+    s1.connect(ws);s2.connect(ws);ws.connect(lp);lp.connect(e);e.connect(o);
+    s1.start(t);s2.start(t);s1.stop(t+dur*2);s2.stop(t+dur*2);
   }else if(rid==='fire'){
-    // Caro — crackling flesh, filtered noise bursts
-    makeNoise(c,o,t,vel,0.06,1200,400);
+    // Caro — crackling flesh: granular noise bursts with random bandpass, sputtering
+    const burstCount=2+Math.floor(Math.random()*3);
+    for(let b=0;b<burstCount;b++){
+      const bt=t+b*0.015+Math.random()*0.01;
+      const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
+      const bp=c.createBiquadFilter();bp.type='bandpass';
+      bp.frequency.value=800+Math.random()*3000;bp.Q.value=3+Math.random()*4;
+      const e=c.createGain();e.gain.setValueAtTime(vel*(0.25+Math.random()*0.15),bt);
+      e.gain.exponentialRampToValueAtTime(0.001,bt+0.008+Math.random()*0.02);
+      src.connect(bp);bp.connect(e);e.connect(o);src.start(bt);src.stop(bt+0.04);
+    }
   }else if(rid==='hihat'){
-    // Ignis — fire crackle as hi-hat
-    makeNoise(c,o,t,vel*0.7,0.03,null,2200);
+    // Ignis — metallic fire sizzle: ring-modulated noise, heat shimmer
+    const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
+    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=3500;
+    // Ring mod with high sine for metallic sizzle
+    const ring=c.createOscillator();ring.type='sine';ring.frequency.value=5800+Math.random()*2000;
+    const rg=c.createGain();rg.gain.value=0;
+    ring.connect(rg.gain);// AM — modulates the gain node
+    src.connect(hp);hp.connect(rg);
+    const e=c.createGain();e.gain.setValueAtTime(vel*0.3,t);
+    e.gain.exponentialRampToValueAtTime(0.001,t+(acc?0.08:0.025));
+    rg.connect(e);e.connect(o);src.start(t);ring.start(t);
+    src.stop(t+0.1);ring.stop(t+0.1);
   }else if(rid==='bell'){
-    // Ferrum — iron gridiron resonance, metallic ring
-    makeFMBell(c,o,t,hz*2,vel,2.76,0.5);// higher pitch, longer, different ratio than accent
+    // Ferrum — iron gridiron resonance: 6 inharmonic metal partials, different from any bell
+    const partials=[1,2.32,3.86,5.41,6.73,8.15];// gridiron bar modes
+    const decays= [1.2,0.8,0.5,0.3,0.2,0.15];
+    partials.forEach((p,i)=>{
+      const osc=c.createOscillator();osc.type='sine';osc.frequency.value=hz*2*p;
+      const e=c.createGain();e.gain.setValueAtTime(0,t);
+      e.gain.linearRampToValueAtTime(vel*0.08/(i+1),t+0.001);
+      e.gain.exponentialRampToValueAtTime(0.001,t+decays[i]);
+      osc.connect(e);e.connect(o);osc.start(t);osc.stop(t+decays[i]+0.02);
+    });
   }else if(rid==='clock'){
-    // Cor — the patient heart: deep 808-style kick, slow and heavy
+    // Cor — the patient heart beneath the gridiron: deep 808 kick with body resonance
     const k=c.createOscillator();k.type='sine';
-    k.frequency.setValueAtTime(hz*0.8,t);k.frequency.exponentialRampToValueAtTime(hz*0.25,t+0.08);
+    k.frequency.setValueAtTime(hz*0.8,t);k.frequency.exponentialRampToValueAtTime(hz*0.2,t+0.12);
+    const ws=c.createWaveShaper();const curve=new Float32Array(256);
+    for(let i=0;i<256;i++){const x=(i/128)-1;curve[i]=Math.tanh(x*1.8);}ws.curve=curve;
     const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.72,t+0.003);
-    e.gain.setTargetAtTime(0.001,t+0.003,0.1);
-    k.connect(e);e.connect(o);k.start(t);k.stop(t+0.3);
+    e.gain.setTargetAtTime(0.001,t+0.003,0.14);
+    k.connect(ws);ws.connect(e);e.connect(o);k.start(t);k.stop(t+0.4);
+    // Body tone — low triangle for chest resonance
+    const b=c.createOscillator();b.type='triangle';b.frequency.value=hz*0.25;
+    const be=c.createGain();be.gain.setValueAtTime(vel*0.15,t);be.gain.exponentialRampToValueAtTime(0.001,t+0.08);
+    b.connect(be);be.connect(o);b.start(t);b.stop(t+0.1);
   }else if(rid==='sub'){
-    // Adeps — bubbling sub-bass, fat rendering
-    makeSub(c,o,t,hz*0.5,vel,dur);
+    // Adeps — bubbling fat: sub with slow amplitude modulation, viscous gurgling
+    const s=c.createOscillator();s.type='sine';s.frequency.value=hz*0.5;
+    // Bubble LFO — irregular amplitude wobble
+    const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=4+Math.random()*3;
+    const lg=c.createGain();lg.gain.value=vel*0.12;lfo.connect(lg);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.45,t+0.008);
+    e.gain.setTargetAtTime(vel*0.2,t+0.008,dur*0.4);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
+    lg.connect(e.gain);// LFO modulates output — bubbling
+    s.connect(e);e.connect(o);s.start(t);lfo.start(t);s.stop(t+dur*2.1);lfo.stop(t+dur*2.1);
   }else if(rid==='texture'){
-    // Fumvs — rising smoke, long filtered breath
-    makeNoise(c,o,t,vel*0.35,dur*2,600,120);
+    // Fumvs — rising smoke: long bandpass-swept noise with pitch drift upward
+    const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.Q.value=6;
+    bp.frequency.setValueAtTime(200,t);bp.frequency.exponentialRampToValueAtTime(1800,t+dur*3);
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2000;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.22,t+dur*0.5);
+    e.gain.setTargetAtTime(vel*0.15,t+dur*0.5,dur*0.8);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*3);
+    src.connect(bp);bp.connect(lp);lp.connect(e);e.connect(o);src.start(t);src.stop(t+dur*3+0.02);
   }else if(rid==='lead'){
-    // Manus — plucked melodic line, the hand turning the body
-    makeSaw(c,o,t,hz,vel,dur*1.3,velBright(hz,vel,3,4),1.2,3);
+    // Manus — the hand turning the body: resonant plucked line with waveshaper bite
+    const s=c.createOscillator();s.type='sawtooth';s.frequency.value=hz;
+    // Second detuned osc for thickness
+    const s2=c.createOscillator();s2.type='square';s2.frequency.value=hz*1.002;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=6;
+    lp.frequency.setValueAtTime(hz*10,t);
+    lp.frequency.exponentialRampToValueAtTime(hz*2,t+dur*0.4);
+    lp.frequency.setTargetAtTime(hz*1.2,t+dur*0.4,dur*0.3);
+    const ws=c.createWaveShaper();const curve=new Float32Array(256);
+    for(let i=0;i<256;i++){const x=(i/128)-1;curve[i]=Math.tanh(x*2);}ws.curve=curve;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.35,t+0.003);
+    e.gain.setTargetAtTime(vel*0.18,t+0.003,dur*0.3);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
+    s.connect(lp);s2.connect(lp);lp.connect(ws);ws.connect(e);e.connect(o);
+    s.start(t);s2.start(t);s.stop(t+dur*1.6);s2.stop(t+dur*1.6);
   }else if(rid==='accent'){
-    // Sal — bright crystalline wit
-    makeFMBell(c,o,t,hz*3,vel*0.6,5.1,0.06);// much higher, shorter, different ratio
+    // Sal — Lawrence's famous last words ("Turn me over, I'm done on this side")
+    // Bright, quick, crystalline: high FM with fast modulator decay, ring-like
+    const car=c.createOscillator();car.type='sine';car.frequency.value=hz*4;
+    const mod=c.createOscillator();mod.type='sine';mod.frequency.value=hz*4*3.14;// irrational ratio — bell-like
+    const mg=c.createGain();mg.gain.setValueAtTime(hz*12,t);mg.gain.exponentialRampToValueAtTime(hz*0.1,t+0.08);
+    mod.connect(mg);mg.connect(car.frequency);
+    const e=c.createGain();e.gain.setValueAtTime(vel*0.28,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.1);
+    car.connect(e);e.connect(o);mod.start(t);car.start(t);mod.stop(t+0.12);car.stop(t+0.12);
   }else{
     makeSaw(c,o,t,hz,vel,dur,hz*4,2,0);
   }
@@ -2630,66 +2720,118 @@ function synthLucy(c,v,t,dur,hz,vel,acc,slide,step){
 }
 
 function synthJoseph(c,v,t,dur,hz,vel,acc,slide,step){
-  const rid=v.relic.role;
+  const rid=v.relic.role,o=_out(v);
   if(rid==='bass'){
-    makeSlap(c,_out(v),t,hz,vel);
+    // Lignum — the carpenter's planed wood: warm round bass, sine + triangle layered
+    // Slow filter open gives woody resonance, not slap
+    const s1=c.createOscillator();s1.type='sine';s1.frequency.value=hz;
+    const s2=c.createOscillator();s2.type='triangle';s2.frequency.value=hz;s2.detune.value=2;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=2;
+    lp.frequency.setValueAtTime(hz*1.5,t);lp.frequency.exponentialRampToValueAtTime(hz*4,t+0.02);
+    lp.frequency.exponentialRampToValueAtTime(hz*1.8,t+dur*0.5);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.48,t+0.004);
+    e.gain.setTargetAtTime(vel*0.28,t+0.004,dur*0.4);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
+    s1.connect(lp);s2.connect(lp);lp.connect(e);e.connect(o);
+    s1.start(t);s2.start(t);s1.stop(t+dur*2);s2.stop(t+dur*2);
   }else if(rid==='guitar'){
-    [-5,0,5].forEach(det=>{
-      const o=c.createOscillator();o.type='triangle';o.frequency.value=hz;o.detune.value=det;
-      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*5;
-      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.22,t+0.005);
-      e.gain.setTargetAtTime(vel*0.06,t+0.005,dur*0.4);e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
-      o.connect(lp);lp.connect(e);e.connect(_out(v));o.start(t);o.stop(t+dur*1.5+0.02);
+    // Manus — carpenter's hands plucking: nylon guitar timbre, body resonance
+    // Triangle + sine layered, resonant LP for body, gentle detune for width
+    [-6,0,6].forEach(det=>{
+      const osc=c.createOscillator();osc.type='triangle';osc.frequency.value=hz;osc.detune.value=det;
+      const body=c.createBiquadFilter();body.type='peaking';body.frequency.value=hz*2.5;body.Q.value=3;body.gain.value=4;
+      const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=1.5;
+      lp.frequency.setValueAtTime(hz*8,t);lp.frequency.exponentialRampToValueAtTime(hz*2,t+dur*0.3);
+      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.18,t+0.003);
+      e.gain.setTargetAtTime(vel*0.06,t+0.003,dur*0.35);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
+      osc.connect(body);body.connect(lp);lp.connect(e);e.connect(o);osc.start(t);osc.stop(t+dur*1.6);
     });
   }else if(rid==='pad'){
-    [hz,hz*1.26,hz*1.5,hz*1.875].forEach(n=>{
-      const o=c.createOscillator();o.type='sine';o.frequency.value=n;
-      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.16,t+0.12);
-      e.gain.setTargetAtTime(0.001,t+0.12,dur*2);
-      o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+dur*4+0.1);
+    // Nubis — the cloud he floats on: ethereal pad, 4 sines with slow chorus LFOs
+    [hz,hz*1.26,hz*1.5,hz*1.875].forEach((n,i)=>{
+      const osc=c.createOscillator();osc.type='sine';osc.frequency.value=n;
+      // Per-note chorus LFO — different rates create shimmering cloud
+      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.2+i*0.15;
+      const lg=c.createGain();lg.gain.value=4+i*2;// increasing detune per note
+      lfo.connect(lg);lg.connect(osc.detune);
+      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=n*3;lp.Q.value=0.3;
+      const e=c.createGain();e.gain.setValueAtTime(0,t);
+      e.gain.linearRampToValueAtTime(vel*0.1,t+0.15);
+      e.gain.setTargetAtTime(vel*0.06,t+0.15,dur*1.5);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*4);
+      osc.connect(lp);lp.connect(e);e.connect(o);osc.start(t);lfo.start(t);
+      osc.stop(t+dur*4.1);lfo.stop(t+dur*4.1);
     });
   }else if(rid==='arp'){
-    const o=c.createOscillator();o.type='triangle';o.frequency.value=hz;
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.22,t+0.005);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.8);
-    o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+dur+0.02);
+    // Scala — the stairway to heaven: ascending double-stop with octave shimmer
+    const o1=c.createOscillator();o1.type='triangle';o1.frequency.value=hz;
+    const o2=c.createOscillator();o2.type='sine';o2.frequency.value=hz*2;// octave above — bell-like
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*6;lp.Q.value=1;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.18,t+0.003);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.9);
+    o1.connect(lp);o2.connect(lp);lp.connect(e);e.connect(o);
+    o1.start(t);o2.start(t);o1.stop(t+dur+0.02);o2.stop(t+dur+0.02);
   }else if(rid==='shimmer'){
-    // Ocvlvs — eyes rolled back: dreamy detuned triangles with gentle phase drift
+    // Ocvlvs — eyes rolled back in ecstasy: dreamy detuned triangles with gentle phase drift
     [-8,0,8].forEach(det=>{
-      const o=c.createOscillator();o.type='triangle';o.frequency.value=hz*2;o.detune.value=det;
+      const osc=c.createOscillator();osc.type='triangle';osc.frequency.value=hz*2;osc.detune.value=det;
       const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.3+Math.random()*0.2;
-      const lg=c.createGain();lg.gain.value=6;lfo.connect(lg);lg.connect(o.detune);
+      const lg=c.createGain();lg.gain.value=6;lfo.connect(lg);lg.connect(osc.detune);
       const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*4;lp.Q.value=0.5;
       const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.08,t+0.06);
       e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
-      o.connect(lp);lp.connect(e);e.connect(_out(v));o.start(t);lfo.start(t);
-      o.stop(t+dur*2.1);lfo.stop(t+dur*2.1);
+      osc.connect(lp);lp.connect(e);e.connect(o);osc.start(t);lfo.start(t);
+      osc.stop(t+dur*2.1);lfo.stop(t+dur*2.1);
     });
   }else if(rid==='vocal'){
-    // Ecstatic vocal: dual formant, sustaining, with vibrato
-    const o=c.createOscillator();o.type='sawtooth';o.frequency.value=humanize(hz,0.01);
-    const bp1=c.createBiquadFilter();bp1.type='bandpass';bp1.frequency.value=700;bp1.Q.value=4;
-    const bp2=c.createBiquadFilter();bp2.type='bandpass';bp2.frequency.value=1100;bp2.Q.value=3;
-    const vib=c.createOscillator();vib.type='sine';vib.frequency.value=5.5;
-    const vg=c.createGain();vg.gain.value=humanize(hz*0.005,0.3);
-    vib.connect(vg);vg.connect(o.frequency);
-    const m1=c.createGain();m1.gain.value=0.6;
-    const m2=c.createGain();m2.gain.value=0.4;
-    o.connect(bp1);o.connect(bp2);bp1.connect(m1);bp2.connect(m2);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.45,t+0.04);
-    e.gain.setTargetAtTime(vel*0.28,t+0.04,dur*0.5);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
-    m1.connect(e);m2.connect(e);e.connect(_out(v));
-    o.start(t);vib.start(t);o.stop(t+dur*2);vib.stop(t+dur*2);
+    // Ecstatic vocal: 3 formants (ah-eh-oh), sustaining, with liturgical vibrato
+    const src=c.createOscillator();src.type='sawtooth';src.frequency.value=humanize(hz,0.008);
+    const vib=c.createOscillator();vib.type='sine';vib.frequency.value=5.2;
+    const vg=c.createGain();vg.gain.value=hz*0.006;
+    vib.connect(vg);vg.connect(src.frequency);
+    // Three formants for richer vowel
+    const f1=c.createBiquadFilter();f1.type='bandpass';f1.frequency.value=660;f1.Q.value=5;// ah
+    const f2=c.createBiquadFilter();f2.type='bandpass';f2.frequency.value=1100;f2.Q.value=4;// eh
+    const f3=c.createBiquadFilter();f3.type='bandpass';f3.frequency.value=2400;f3.Q.value=3;// presence
+    src.connect(f1);src.connect(f2);src.connect(f3);
+    const m1=c.createGain();m1.gain.value=0.5;
+    const m2=c.createGain();m2.gain.value=0.35;
+    const m3=c.createGain();m3.gain.value=0.15;
+    f1.connect(m1);f2.connect(m2);f3.connect(m3);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.4,t+0.04);
+    e.gain.setTargetAtTime(vel*0.25,t+0.04,dur*0.5);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
+    m1.connect(e);m2.connect(e);m3.connect(e);e.connect(o);
+    src.start(t);vib.start(t);src.stop(t+dur*2.1);vib.stop(t+dur*2.1);
   }else if(rid==='texture'){
-    makeNoise(c,_out(v),t,vel*0.22,dur*0.8,1200,600);
+    // Pulvis — sawdust in the workshop: gentle filtered noise with woody resonance
+    const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=400;bp.Q.value=2;
+    // Peaking filter at wood resonance frequency
+    const body=c.createBiquadFilter();body.type='peaking';body.frequency.value=280;body.Q.value=3;body.gain.value=6;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.15,t+0.05);
+    e.gain.setTargetAtTime(vel*0.08,t+0.05,dur*0.6);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
+    src.connect(bp);bp.connect(body);body.connect(e);e.connect(o);src.start(t);src.stop(t+dur*1.6);
   }else if(rid==='rhythm'){
-    const o=c.createOscillator();o.type='triangle';o.frequency.value=hz;
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.25,t+0.003);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.5);
-    o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+dur*0.6);
+    // Sandalia — the sandal tapping during levitation: soft wood-block with body tone
+    const osc=c.createOscillator();osc.type='triangle';
+    osc.frequency.setValueAtTime(hz*3,t);osc.frequency.exponentialRampToValueAtTime(hz*1.5,t+0.01);
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=hz*2;bp.Q.value=4;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.25,t+0.002);
+    e.gain.exponentialRampToValueAtTime(0.001,t+0.06);
+    osc.connect(bp);bp.connect(e);e.connect(o);osc.start(t);osc.stop(t+0.08);
+    // Soft resonant body — the floor vibrating
+    const body=c.createOscillator();body.type='sine';body.frequency.value=hz*0.5;
+    const be=c.createGain();be.gain.setValueAtTime(vel*0.1,t);be.gain.exponentialRampToValueAtTime(0.001,t+0.04);
+    body.connect(be);be.connect(o);body.start(t);body.stop(t+0.05);
   }else{
-    makeSlap(c,_out(v),t,hz,vel*0.7);
+    // Fallback — gentle sine pluck
+    const osc=c.createOscillator();osc.type='sine';osc.frequency.value=hz;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.25,t+0.005);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.8);
+    osc.connect(e);e.connect(o);osc.start(t);osc.stop(t+dur);
   }
 }
 
@@ -2817,33 +2959,94 @@ function synthAnth(c,v,t,dur,hz,vel,acc,slide,step){
 }
 
 function synthVitus(c,v,t,dur,hz,vel,acc,slide,step){
-  const rid=v.relic.role;
+  const rid=v.relic.role,o=_out(v);
   if(rid==='acid'){
-    makeAcid(c,_out(v),t,hz,vel,dur,acc,slide,v);
+    // Venenum — the 303 poison: persistent acid bassline (already strong, keep it)
+    makeAcid(c,o,t,hz,vel,dur,acc,slide,v);
   }else if(rid==='bass'){
-    makeSaw(c,_out(v),t,hz,vel,dur*1.5,hz*4,5,4);
+    // Caldarium — the boiling cauldron: thick distorted square bass with filter sweep
+    const s1=c.createOscillator();s1.type='square';s1.frequency.value=hz;
+    const s2=c.createOscillator();s2.type='sawtooth';s2.frequency.value=hz*0.998;// slight detune — phasing
+    const ws=c.createWaveShaper();const curve=new Float32Array(256);
+    for(let i=0;i<256;i++){const x=(i/128)-1;curve[i]=Math.tanh(x*2.5);}ws.curve=curve;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=6;
+    lp.frequency.setValueAtTime(hz*(acc?8:5),t);
+    lp.frequency.exponentialRampToValueAtTime(hz*1.5,t+dur*0.4);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.42,t+0.004);
+    e.gain.setTargetAtTime(vel*0.22,t+0.004,dur*0.4);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
+    s1.connect(ws);s2.connect(ws);ws.connect(lp);lp.connect(e);e.connect(o);
+    s1.start(t);s2.start(t);s1.stop(t+dur*2);s2.stop(t+dur*2);
   }else if(rid==='clock'){
-    makeNoise(c,_out(v),t,vel*0.5,0.012,null,8000);
+    // Tintinnabulum — the dancer's ankle bells: high metallic click with ring
+    const bell=c.createOscillator();bell.type='sine';bell.frequency.value=hz*12;
+    const mod=c.createOscillator();mod.type='sine';mod.frequency.value=hz*12*1.618;// golden ratio — inharmonic
+    const mg=c.createGain();mg.gain.setValueAtTime(hz*6,t);mg.gain.exponentialRampToValueAtTime(0,t+0.02);
+    mod.connect(mg);mg.connect(bell.frequency);
+    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=4000;
+    const e=c.createGain();e.gain.setValueAtTime(vel*0.2,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.04);
+    bell.connect(hp);hp.connect(e);e.connect(o);bell.start(t);mod.start(t);bell.stop(t+0.06);mod.stop(t+0.06);
   }else if(rid==='rhythm'){
-    const o=c.createOscillator();o.type='square';o.frequency.value=hz;
-    const e=c.createGain();e.gain.setValueAtTime(vel*0.28,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.02);
-    o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+0.025);
+    // Saltatio — the compulsive dance: urgent square stabs, alternating pitch
+    const rHz=step%2===0?hz*2:hz*3;// alternating intervals — frenetic
+    const s=c.createOscillator();s.type='square';s.frequency.value=rHz;
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=rHz*1.5;bp.Q.value=4;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.3,t+0.001);
+    e.gain.exponentialRampToValueAtTime(0.001,t+0.025);
+    s.connect(bp);bp.connect(e);e.connect(o);s.start(t);s.stop(t+0.03);
   }else if(rid==='arp'){
-    const o=c.createOscillator();o.type='sawtooth';o.frequency.value=hz;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=8;lp.frequency.value=hz*3;
-    const e=c.createGain();e.gain.setValueAtTime(vel*0.28,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.03);
-    o.connect(lp);lp.connect(e);e.connect(_out(v));o.start(t);o.stop(t+0.04);
+    // Tarantella — frantic ascending arpeggio: saw through resonant filter, fast decay
+    const arpDeg=[0,3,5,7,10,12,15,17];// minor scale steps spanning 2 octaves
+    const arpHz=hz*Math.pow(2,arpDeg[step%8]/12);
+    const s=c.createOscillator();s.type='sawtooth';s.frequency.value=arpHz;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=10;
+    lp.frequency.setValueAtTime(arpHz*6,t);lp.frequency.exponentialRampToValueAtTime(arpHz*1.2,t+dur*0.5);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.28,t+0.002);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.7);
+    s.connect(lp);lp.connect(e);e.connect(o);s.start(t);s.stop(t+dur);
   }else if(rid==='kick'){
-    makeSub(c,_out(v),t,hz,vel*1.15,dur);
-    makeNoise(c,_out(v),t,vel*0.25,0.025,600,null);
+    // Percussio — the floor stomped through: proper dance kick with click + sub
+    const k=c.createOscillator();k.type='sine';
+    k.frequency.setValueAtTime(160,t);k.frequency.exponentialRampToValueAtTime(42,t+0.05);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.82,t+0.002);
+    e.gain.setTargetAtTime(0.001,t+0.002,0.08);
+    k.connect(e);e.connect(o);k.start(t);k.stop(t+0.25);
+    // Click transient
+    const cl=c.createOscillator();cl.type='square';cl.frequency.value=1500;
+    const ce=c.createGain();ce.gain.setValueAtTime(vel*0.15,t);ce.gain.exponentialRampToValueAtTime(0.001,t+0.003);
+    cl.connect(ce);ce.connect(o);cl.start(t);cl.stop(t+0.005);
+    // Sub weight
+    const sub=c.createOscillator();sub.type='sine';sub.frequency.value=42;
+    const se=c.createGain();se.gain.setValueAtTime(0,t+0.01);se.gain.linearRampToValueAtTime(vel*0.35,t+0.015);
+    se.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+    sub.connect(se);se.connect(o);sub.start(t);sub.stop(t+0.15);
   }else if(rid==='pulse'){
-    const o=c.createOscillator();o.type='triangle';o.frequency.value=hz;
-    const e=c.createGain();e.gain.setValueAtTime(vel*0.22,t);e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.1);
-    o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+dur*1.2);
+    // Convulsio — involuntary muscle spasm: irregular gated pulse with pitch wobble
+    const s=c.createOscillator();s.type='triangle';s.frequency.value=hz;
+    // Pitch wobble — the spasm
+    const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=8+Math.random()*4;
+    const lg=c.createGain();lg.gain.value=hz*0.06;lfo.connect(lg);lg.connect(s.frequency);
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*4;lp.Q.value=2;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.22,t+0.003);
+    e.gain.setTargetAtTime(vel*0.12,t+0.003,dur*0.3);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.2);
+    s.connect(lp);lp.connect(e);e.connect(o);s.start(t);lfo.start(t);s.stop(t+dur*1.3);lfo.stop(t+dur*1.3);
   }else if(rid==='breath'){
-    makeNoise(c,_out(v),t,vel*0.28,dur*1.5,400,120);
+    // Anhelitus — panting, gasping: rhythmic filtered noise with formant character
+    const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
+    // Two bandpass filters for breath formants (like panting "ha-ha")
+    const f1=c.createBiquadFilter();f1.type='bandpass';f1.frequency.value=500;f1.Q.value=3;
+    const f2=c.createBiquadFilter();f2.type='bandpass';f2.frequency.value=1400;f2.Q.value=2;
+    const m1=c.createGain();m1.gain.value=0.6;
+    const m2=c.createGain();m2.gain.value=0.4;
+    src.connect(f1);src.connect(f2);f1.connect(m1);f2.connect(m2);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.22,t+0.01);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.2);
+    m1.connect(e);m2.connect(e);e.connect(o);src.start(t);src.stop(t+dur*1.3);
   }else{
-    makeGatedSaw(c,_out(v),t,hz,vel,hz*2,12);
+    // Fallback — gated saw (the dance floor)
+    makeGatedSaw(c,o,t,hz,vel,hz*2,12);
   }
 }
 
@@ -2916,8 +3119,13 @@ function synthPaprika(c,v,t,dur,hz,vel,acc,slide,step){
   if(rid==='chant'){
     // Somnium — Delay Lama chanting: formant-filtered saws sweeping ah↔oh
     const chantHz=chord.notes[0];// follow chord root
+    // Shared vibrato for all voices — dramatic liturgical warble
+    const vib=c.createOscillator();vib.type='sine';vib.frequency.value=5.5;
+    const vibG=c.createGain();vibG.gain.value=25;// ±25 cents
+    vib.connect(vibG);vib.start(t);vib.stop(t+dur*2);
     [-10,-3,0,3,10].forEach(det=>{
       const s=c.createOscillator();s.type='sawtooth';s.frequency.value=chantHz;s.detune.value=det;
+      vibG.connect(s.detune);// vibrato modulates pitch
       const f1=c.createBiquadFilter();f1.type='bandpass';f1.Q.value=5;
       f1.frequency.setValueAtTime(730,t);// "ah"
       f1.frequency.setTargetAtTime(570,t,dur*0.6);// drift toward "oh"
@@ -2931,10 +3139,6 @@ function synthPaprika(c,v,t,dur,hz,vel,acc,slide,step){
       f1.connect(mix);f2.connect(mix);mix.connect(o);
       s.start(t);s.stop(t+dur*2);
     });
-    // Vibrato
-    const vib=c.createOscillator();vib.type='sine';vib.frequency.value=5.5;
-    const vg=c.createGain();vg.gain.value=25;// ±25 cents — dramatic vibrato
-    vib.start(t);vib.stop(t+dur*2);
   }else if(rid==='brass'){
     // Pompa — distant processional horns: slow swell, muffled through stone, warm not stabbing
     const bHz=chord.notes[1]*0.5;// octave down — deeper, less aggressive
@@ -3736,6 +3940,9 @@ let currentSaintIdx=0;
 const slots=new Array(9).fill(null);
 let dragging=null;
 let dragFromSlot=null;
+// Tap-to-place: stores {relic, saint} when user taps a catalogue relic on mobile
+let pendingRelic=null;
+const isTouchDevice=()=>'ontouchstart' in window||navigator.maxTouchPoints>0;
 
 // ══════ IDLE MESSAGES ══════
 const IDLE_PHRASES=[
@@ -3847,7 +4054,7 @@ function renderCarousel(){
 }
 
 function selectSaint(idx){
-  currentSaintIdx=idx;const s=SAINTS[idx];
+  currentSaintIdx=idx;pendingRelic=null;const s=SAINTS[idx];
   document.documentElement.style.setProperty('--saint-color',s.color);
   const bc=document.getElementById('body-container');if(bc)bc.setAttribute('data-vibe',s.vibeTag);
   document.getElementById('saint-name').textContent=s.name;
@@ -3871,7 +4078,19 @@ function renderRelicGrid(){
     niche.title=r.desc;
     if(!niche.classList.contains('placed')){
       niche.addEventListener('pointerdown',e=>startDrag(e,r,saint,niche));
-      niche.addEventListener('click',e=>{if(!AC.ctx){initAudio();startSequencer();}playRelicPreview(r,saint);});
+      niche.addEventListener('click',e=>{
+        if(!AC.ctx){initAudio();startSequencer();}
+        playRelicPreview(r,saint);
+        // Tap-to-place: on touch devices, select this relic for placement
+        if(isTouchDevice()){
+          // Clear previous selection
+          document.querySelectorAll('.cabinet-niche.tap-selected').forEach(n=>n.classList.remove('tap-selected'));
+          pendingRelic={relic:r,saint:saint};
+          niche.classList.add('tap-selected');
+          // Pulse slots to show they're ready to receive
+          document.querySelectorAll('.slot').forEach(s=>{if(!slots[+s.dataset.index])s.classList.add('tap-ready');});
+        }
+      });
     }
     cab.appendChild(niche);
   });
@@ -3917,6 +4136,17 @@ function renderSlots(){
       sl.addEventListener('pointerdown',e=>{if(!dragging)startSlotDrag(e,i);});
     }else{
       sl.innerHTML='<span class="slot-icon">'+p.label+'</span>';
+      // Tap-to-place: tap an empty slot to place the pending relic
+      sl.addEventListener('click',()=>{
+        if(pendingRelic){
+          if(!AC.ctx){initAudio();startSequencer();}
+          if(slots[i])removeFromSlot(i,true);
+          placeRelic(i,pendingRelic.relic,pendingRelic.saint);
+          pendingRelic=null;
+          document.querySelectorAll('.cabinet-niche.tap-selected').forEach(n=>n.classList.remove('tap-selected'));
+          document.querySelectorAll('.slot.tap-ready').forEach(s=>s.classList.remove('tap-ready'));
+        }
+      });
     }
     container.appendChild(sl);
   }
@@ -3952,6 +4182,10 @@ function renderAuth(){
 // ══════ DRAG & DROP ══════
 function startDrag(ev,relic,saint,el){
   ev.preventDefault();if(!AC.ctx){initAudio();startSequencer();}
+  // Clear tap-to-place if dragging starts
+  pendingRelic=null;
+  document.querySelectorAll('.cabinet-niche.tap-selected').forEach(n=>n.classList.remove('tap-selected'));
+  document.querySelectorAll('.slot.tap-ready').forEach(s=>s.classList.remove('tap-ready'));
   dragging={relic,saint,el,fromSlot:null};
   el.classList.add('dragging');
   const gh=document.getElementById('drag-ghost');
@@ -4049,18 +4283,14 @@ function onDragEnd(ev){
   if(target!==null){
     if(fromSlot!==null){
       if(target!==fromSlot){
-        // Atomic swap: collect old voices for deferred cleanup
-        const oldFrom=VOICES[fromSlot];const oldTarget=VOICES[target];
-        const temp=slots[target];
-        // Remove old entries immediately (no async gap)
-        delete VOICES[fromSlot];slots[fromSlot]=null;
-        if(oldTarget){delete VOICES[target];slots[target]=null;}
-        // Place new voices
+        // Atomic swap: collect info for deferred rebuild
+        const temp=slots[target]?{relic:slots[target].relic,saint:slots[target].saint}:null;
+        // Properly remove old voices (cleans up LFOs, acid oscs, screw LFOs, filters)
+        removeFromSlot(fromSlot,true);
+        if(temp)removeFromSlot(target,true);
+        // Rebuild voices in new positions
         if(temp)placeRelic(fromSlot,temp.relic,temp.saint,true);
         placeRelic(target,dragging.relic,dragging.saint,true);
-        // Cleanup old audio nodes after new ones are live
-        if(oldFrom){oldFrom.output.gain.setTargetAtTime(0,AC.ctx.currentTime,0.05);setTimeout(()=>{try{oldFrom.output.disconnect();}catch(e){}},300);}
-        if(oldTarget){oldTarget.output.gain.setTargetAtTime(0,AC.ctx.currentTime,0.05);setTimeout(()=>{try{oldTarget.output.disconnect();}catch(e){}},300);}
         renderSlots();renderRelicGrid();renderAuth();
       }
     } else {
