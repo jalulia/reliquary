@@ -14,6 +14,7 @@
   --w40:rgba(255,255,255,.38);--w20:rgba(255,255,255,.18);--w10:rgba(255,255,255,.08);
   --w05:rgba(255,255,255,.04);--w02:rgba(255,255,255,.02);
   --saint-color:#FF4500;--glow-intensity:0;--completion-color:var(--saint-color);
+  --convergence-pulse:0;
 }
 html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--w60);
 cursor:default;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
@@ -147,6 +148,8 @@ display:flex;align-items:center;justify-content:center;padding:0;margin:0}
 .reliquary-border .fr-filigree{fill:none;stroke:rgba(255,255,255,.08);stroke-width:.4;opacity:.45}
 .reliquary-border .fr-gem{fill:var(--saint-color);opacity:.12;stroke:rgba(255,255,255,.15);stroke-width:.3;transition:fill .5s,opacity .8s}
 .reliquary-border .fr-cross{fill:none;stroke:rgba(255,255,255,.18);stroke-width:1.2}
+/* Convergence pulse — subtle brightness swell on the frame when polyrhythmic LFOs align */
+.reliquary-border{filter:brightness(calc(1 + var(--convergence-pulse) * 0.25));transition:filter 2s ease}
 .gold .reliquary-border .fr-perimeter{stroke:color-mix(in srgb,var(--completion-color) 45%,transparent)}
 .gold .reliquary-border .fr-gem{fill:color-mix(in srgb,var(--completion-color) 50%,transparent);opacity:.35}
 #body-container{position:absolute;top:14%;left:16%;right:16%;bottom:12%;overflow:visible}
@@ -1802,6 +1805,47 @@ let auditionVoice=null;
 let SWING={active:false,amount:0};
 const ROOM={ctx:null,busSend:null,convolver:null,busWet:null,busDry:null,masterGain:null};
 
+// ══════ POLYRHYTHMIC LFO BREATHING SYSTEM ══════
+// Each saint breathes at its own rate. Ratios of a shared base tempo (1/60 Hz = 60s cycle).
+// Voices phase in and out of alignment — convergence = settled, divergence = drifting.
+const LFO_BASE_FREQ=1/60;// 0.01667 Hz — one cycle per 60 seconds
+const SAINT_LFO_RATIOS={
+  bartholomew:{num:7,den:4,ampDepth:0.12,detuneDepth:5,filterRange:800},// 34s — septimal, aggressive
+  lawrence:   {num:3,den:2,ampDepth:0.10,detuneDepth:3,filterRange:600},// 40s — steady sizzle
+  catherine:  {num:4,den:3,ampDepth:0.08,detuneDepth:4,filterRange:1200},// 45s — motorik rotation
+  denis:      {num:5,den:3,ampDepth:0.09,detuneDepth:4,filterRange:500},// 36s — stately procession
+  lucy:       {num:1,den:1,ampDepth:0.15,detuneDepth:6,filterRange:400},// 60s — slowest breath, anchor
+  joseph:     {num:2,den:1,ampDepth:0.07,detuneDepth:2,filterRange:1000},// 30s — double-time lift
+  sebastian:  {num:5,den:4,ampDepth:0.11,detuneDepth:5,filterRange:700},// 48s — piercing, bright
+  anthony:    {num:6,den:5,ampDepth:0.13,detuneDepth:6,filterRange:900},// 50s — hallucination crawl
+  vitus:      {num:8,den:5,ampDepth:0.10,detuneDepth:4,filterRange:1100},// 38s — dance tension
+  symeon:     {num:9,den:8,ampDepth:0.14,detuneDepth:7,filterRange:500},// 53s — drunken near-unison
+  paprika:    {num:7,den:6,ampDepth:0.12,detuneDepth:5,filterRange:600},// 51s — dream drift
+};
+const SAINT_LFOS={};// Runtime: {lfo, ampGain, detuneGain, refCount, startTime}
+// Role → filter config for per-voice timbral modulation
+const LFO_FILTER_MAP={
+  bass:{type:'lowpass',freq:200,Q:1.5},sub:{type:'lowpass',freq:200,Q:1.5},
+  kick:{type:'lowpass',freq:400,Q:0.8},
+  rhythm:{type:'bandpass',freq:1200,Q:1.0},rhythm2:{type:'bandpass',freq:1200,Q:1.0},
+  clock:{type:'bandpass',freq:1200,Q:1.0},clave:{type:'bandpass',freq:1200,Q:1.0},
+  lead:{type:'bandpass',freq:2000,Q:2.0},melody:{type:'bandpass',freq:2000,Q:2.0},
+  arp:{type:'bandpass',freq:2000,Q:2.0},
+  pad:{type:'lowpass',freq:3000,Q:0.5},drone:{type:'lowpass',freq:3000,Q:0.5},
+  swell:{type:'lowpass',freq:3000,Q:0.5},chord:{type:'lowpass',freq:3000,Q:0.5},
+  shimmer:{type:'lowpass',freq:4000,Q:0.7},accent:{type:'lowpass',freq:4000,Q:0.7},
+  texture:{type:'bandpass',freq:1500,Q:1.2},breath:{type:'bandpass',freq:1500,Q:1.2},
+  // Roles that don't get a filter
+  modifier:null,phaser:null,tremolo:null,
+};
+function createBreathWave(ctx){
+  // Asymmetric waveform: faster inhale, slower exhale (not pure sine)
+  const real=new Float32Array([0,0,0.3,0.08]);
+  const imag=new Float32Array([0,1,0,0]);
+  return ctx.createPeriodicWave(real,imag,{disableNormalization:false});
+}
+function getLFODepthScale(voiceCount){return 1.0/(1+voiceCount*0.14);}
+
 function initAudio(){
   const c=new(window.AudioContext||window.webkitAudioContext)();
   if(c.state==='suspended')c.resume();
@@ -1831,6 +1875,8 @@ function initAudio(){
   for(let i=0;i<1024;i++){const x=i/512-1;satCurve[i]=Math.tanh(x*1.4);}
   ROOM.saturation.curve=satCurve;ROOM.saturation.oversample='2x';
   ROOM.busWet.connect(ROOM.saturation);ROOM.saturation.connect(AC.masterLPF);
+  // Breath waveform for polyrhythmic LFO system
+  AC._breathWave=createBreathWave(c);
 }
 
 function buildConvolver(c){
@@ -1918,6 +1964,57 @@ function applyModifiers(){
   Object.keys(MODIFIERS).forEach(k=>{
     if(ids.includes(k))MODIFIERS[k].apply(t);
   });
+}
+
+// ══════ CONVERGENCE DETECTOR ══════
+// Monitors polyrhythmic LFO phases. When saints' breathing cycles align,
+// triggers a subtle sonic/visual convergence moment.
+let _convTimer=null,_lastConvergence=0;
+function startConvergenceDetector(){if(_convTimer)return;_convTimer=setInterval(checkConvergence,500);}
+function stopConvergenceDetector(){if(_convTimer){clearInterval(_convTimer);_convTimer=null;}}
+function checkConvergence(){
+  if(!AC.ctx)return;
+  const now=AC.ctx.currentTime;
+  const activeSaints=Object.keys(SAINT_LFOS);
+  if(activeSaints.length<1)return;
+  // Update LFO depth scaling based on current voice count
+  const n=Object.keys(VOICES).length;
+  const depthScale=getLFODepthScale(n);
+  activeSaints.forEach(sid=>{
+    const sl=SAINT_LFOS[sid],r=SAINT_LFO_RATIOS[sid];
+    if(!sl||!r)return;
+    sl.ampGain.gain.setTargetAtTime(r.ampDepth*depthScale,now,0.3);
+    sl.detuneGain.gain.setTargetAtTime(r.filterRange*depthScale,now,0.3);
+  });
+  // Convergence detection: check if ≥60% of active saints near their peaks
+  if(activeSaints.length<2)return;
+  const phases=activeSaints.map(sid=>{
+    const sl=SAINT_LFOS[sid],r=SAINT_LFO_RATIOS[sid];
+    const freq=LFO_BASE_FREQ*r.num/r.den;
+    return((now-sl.startTime)*freq)%1.0;
+  });
+  // Sine peaks at phase 0.25 (quarter cycle)
+  const nearPeak=phases.filter(p=>{
+    const dist=Math.min(Math.abs(p-0.25),Math.abs(p-1.25));
+    return dist<0.12;
+  }).length;
+  if(nearPeak/activeSaints.length>=0.6){triggerConvergenceMoment(now,nearPeak/activeSaints.length);}
+}
+function triggerConvergenceMoment(t,ratio){
+  if(t-_lastConvergence<20)return;// debounce: min 20s between events
+  _lastConvergence=t;
+  const intensity=ratio;// 0.6–1.0
+  // Subtle master gain swell
+  const cg=AC.master.gain.value;
+  AC.master.gain.setTargetAtTime(cg*(1+0.08*intensity),t,0.8);
+  AC.master.gain.setTargetAtTime(cg,t+2,1.5);
+  // Brighten: open master LPF slightly
+  const cf=AC.masterLPF.frequency.value;
+  AC.masterLPF.frequency.setTargetAtTime(Math.min(cf+800*intensity,20000),t,0.5);
+  AC.masterLPF.frequency.setTargetAtTime(cf,t+3,1.0);
+  // Visual pulse
+  document.documentElement.style.setProperty('--convergence-pulse','1');
+  setTimeout(()=>document.documentElement.style.setProperty('--convergence-pulse','0'),3000);
 }
 
 // ══════ DILLA TIMING ══════
@@ -3100,15 +3197,61 @@ const SYNTH_FNS={
   paprika:synthPaprika,
 };
 
+// ══════ POLYRHYTHMIC LFO LIFECYCLE ══════
+function ensureSaintLFO(saint){
+  if(SAINT_LFOS[saint.id]){SAINT_LFOS[saint.id].refCount++;return;}
+  const c=AC.ctx,r=SAINT_LFO_RATIOS[saint.id];
+  if(!r)return;
+  const freq=LFO_BASE_FREQ*r.num/r.den;
+  // LFO oscillator — shared by all relics of this saint
+  const lfo=c.createOscillator();
+  if(AC._breathWave)lfo.setPeriodicWave(AC._breathWave);
+  else lfo.type='sine';
+  lfo.frequency.value=freq;
+  // Amplitude depth scaler: LFO → ampGain → connects to each voice's vg.gain
+  const ampGain=c.createGain();ampGain.gain.value=r.ampDepth;
+  // Detune depth scaler: LFO → detuneGain → connects to per-voice filter frequency
+  const detuneGain=c.createGain();detuneGain.gain.value=r.filterRange;
+  lfo.connect(ampGain);lfo.connect(detuneGain);
+  lfo.start();
+  SAINT_LFOS[saint.id]={lfo,ampGain,detuneGain,refCount:1,startTime:c.currentTime};
+}
+function releaseSaintLFO(saint){
+  const sl=SAINT_LFOS[saint.id];if(!sl)return;
+  sl.refCount--;
+  if(sl.refCount<=0){
+    try{sl.lfo.stop();}catch(e){}
+    try{sl.lfo.disconnect();sl.ampGain.disconnect();sl.detuneGain.disconnect();}catch(e){}
+    delete SAINT_LFOS[saint.id];
+  }
+}
+
 // ══════ VOICE BUILDER ══════
 function buildVoice(relic,saint,outputNode){
   const c=AC.ctx,vg=c.createGain();vg.gain.value=0.7;
   let dest=outputNode||AC.master;
+
+  // --- Polyrhythmic LFO: amplitude breathing ---
+  ensureSaintLFO(saint);
+  const sl=SAINT_LFOS[saint.id];
+  if(sl){sl.ampGain.connect(vg.gain);}// LFO modulates voice amplitude
+
+  // --- Per-voice LFO filter (timbral breathing) ---
+  let lfoFilter=null;
+  const fCfg=LFO_FILTER_MAP[relic.role];
+  if(fCfg&&sl){
+    lfoFilter=c.createBiquadFilter();
+    lfoFilter.type=fCfg.type;
+    lfoFilter.frequency.value=fCfg.freq;
+    lfoFilter.Q.value=fCfg.Q;
+    // Saint LFO modulates this filter's frequency
+    sl.detuneGain.connect(lfoFilter.frequency);
+  }
+
   if(saint.id==='bartholomew'){
     // Chopped & screwed signal chain: voice → boost → lowpass (underwater) → flanger → dest
-    const screwBoost=c.createGain();screwBoost.gain.value=1.4;// moderate compensation (was 2.5, caused clipping)
+    const screwBoost=c.createGain();screwBoost.gain.value=1.4;
     const screwLP=c.createBiquadFilter();screwLP.type='lowpass';screwLP.frequency.value=5000;screwLP.Q.value=0.6;
-    // Flanger: slow sweep, subtle feedback, syrupy movement
     const flDry=c.createGain();flDry.gain.value=0.7;
     const flWet=c.createGain();flWet.gain.value=0.3;
     const flDelay=c.createDelay(0.02);flDelay.delayTime.value=0.003;
@@ -3120,15 +3263,20 @@ function buildVoice(relic,saint,outputNode){
     flDelay.connect(flWet);
     screwLP.connect(flDry);screwLP.connect(flDelay);
     flDry.connect(dest);flWet.connect(dest);
-    vg.connect(screwBoost);screwBoost.connect(screwLP);
-    vg._screwLfo=flLfo;// store for cleanup
+    // Insert LFO filter before screw chain if available
+    if(lfoFilter){vg.connect(lfoFilter);lfoFilter.connect(screwBoost);}
+    else{vg.connect(screwBoost);}
+    screwBoost.connect(screwLP);
+    vg._screwLfo=flLfo;
   }else{
-    vg.connect(dest);
+    // Insert LFO filter in the chain: vg → lfoFilter → dest
+    if(lfoFilter){vg.connect(lfoFilter);lfoFilter.connect(dest);}
+    else{vg.connect(dest);}
   }
   if(saint.id!=='bartholomew'&&relic.id!=='patella')vg.connect(AC.reverbSend);
   const pattern=(PATTERNS[saint.id]&&PATTERNS[saint.id][relic.id])||null;
   const synthFn=SYNTH_FNS[saint.id]||null;
-  return{output:vg,pattern,synthFn,saint,relic};
+  return{output:vg,pattern,synthFn,saint,relic,_lfoFilter:lfoFilter};
 }
 
 // ══════ VOTIVE SYNTHESIS ══════
@@ -3928,6 +4076,7 @@ function placeRelic(idx,relic,saint,silent){
   if(!AC.ctx)initAudio();if(!timerID)startSequencer();
   const voice=buildVoice(relic,saint,AC.master);
   slots[idx]={relic,saint,voice};VOICES[idx]=voice;updateDensity();
+  startConvergenceDetector();// ensure breathing system is running
   if(!silent){renderSlots();renderRelicGrid();renderAuth();}
   setTimeout(()=>{const sl=document.querySelector('.slot[data-index="'+idx+'"]');if(sl){sl.classList.add('burst');setTimeout(()=>sl.classList.remove('burst'),500);}},50);
   resetIdleTimer();
@@ -3939,11 +4088,19 @@ function removeFromSlot(idx,silent){
     // Cleanup leaky nodes
     if(s.voice.output._screwLfo)try{s.voice.output._screwLfo.stop();}catch(e){}
     if(s.voice._acidOsc)try{s.voice._acidOsc.stop();}catch(e){}
+    // Cleanup per-voice LFO filter
+    if(s.voice._lfoFilter)try{s.voice._lfoFilter.disconnect();}catch(e){}
+    // Release saint LFO reference
+    if(s.voice.saint)releaseSaintLFO(s.voice.saint);
     setTimeout(()=>{try{s.voice.output.disconnect();}catch(e){}},250);
   }
   delete VOICES[idx];slots[idx]=null;updateDensity();
   if(!silent){renderSlots();renderRelicGrid();renderAuth();}
-  if(Object.keys(VOICES).length===0&&timerID){clearTimeout(timerID);timerID=null;}resetIdleTimer();
+  if(Object.keys(VOICES).length===0){
+    if(timerID){clearTimeout(timerID);timerID=null;}
+    stopConvergenceDetector();
+  }
+  resetIdleTimer();
 }
 
 // ══════ VISUALIZER ══════
