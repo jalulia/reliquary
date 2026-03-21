@@ -2719,115 +2719,139 @@ function synthLucy(c,v,t,dur,hz,vel,acc,slide,step){
 function synthJoseph(c,v,t,dur,hz,vel,acc,slide,step){
   const rid=v.relic.role,o=_out(v);
   if(rid==='bass'){
-    // Lignum — the carpenter's planed wood: warm round bass, sine + triangle layered
-    // Slow filter open gives woody resonance, not slap
-    const s1=c.createOscillator();s1.type='sine';s1.frequency.value=hz;
-    const s2=c.createOscillator();s2.type='triangle';s2.frequency.value=hz;s2.detune.value=2;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=2;
-    lp.frequency.setValueAtTime(hz*1.5,t);lp.frequency.exponentialRampToValueAtTime(hz*4,t+0.02);
-    lp.frequency.exponentialRampToValueAtTime(hz*1.8,t+dur*0.5);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.48,t+0.004);
-    e.gain.setTargetAtTime(vel*0.28,t+0.004,dur*0.4);
+    // Lignum — levitating wood: saw bass with tape wobble and saturation
+    const s1=c.createOscillator();s1.type='sawtooth';s1.frequency.value=hz;
+    const s2=c.createOscillator();s2.type='sawtooth';s2.frequency.value=hz*0.998;
+    // Tape wow — unstable, floating
+    const wow=c.createOscillator();wow.type='sine';wow.frequency.value=0.6+Math.random()*0.4;
+    const wg=c.createGain();wg.gain.value=4;// ±4 cents wobble
+    wow.connect(wg);wg.connect(s1.detune);wg.connect(s2.detune);
+    const ws=c.createWaveShaper();const curve=new Float32Array(256);
+    for(let i=0;i<256;i++){const x=(i/128)-1;curve[i]=Math.tanh(x*1.8);}ws.curve=curve;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=3;
+    lp.frequency.setValueAtTime(hz*5,t);lp.frequency.exponentialRampToValueAtTime(hz*1.5,t+dur*0.4);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.42,t+0.006);
+    e.gain.setTargetAtTime(vel*0.25,t+0.006,dur*0.4);
     e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
-    s1.connect(lp);s2.connect(lp);lp.connect(e);e.connect(o);
-    s1.start(t);s2.start(t);s1.stop(t+dur*2);s2.stop(t+dur*2);
+    s1.connect(ws);s2.connect(ws);ws.connect(lp);lp.connect(e);e.connect(o);
+    s1.start(t);s2.start(t);wow.start(t);s1.stop(t+dur*2);s2.stop(t+dur*2);wow.stop(t+dur*2);
   }else if(rid==='guitar'){
-    // Manus — carpenter's hands plucking: nylon guitar timbre, body resonance
-    // Triangle + sine layered, resonant LP for body, gentle detune for width
-    [-6,0,6].forEach(det=>{
-      const osc=c.createOscillator();osc.type='triangle';osc.frequency.value=hz;osc.detune.value=det;
-      const body=c.createBiquadFilter();body.type='peaking';body.frequency.value=hz*2.5;body.Q.value=3;body.gain.value=4;
-      const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=1.5;
-      lp.frequency.setValueAtTime(hz*8,t);lp.frequency.exponentialRampToValueAtTime(hz*2,t+dur*0.3);
-      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.18,t+0.003);
-      e.gain.setTargetAtTime(vel*0.06,t+0.003,dur*0.35);
-      e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
-      osc.connect(body);body.connect(lp);lp.connect(e);e.connect(o);osc.start(t);osc.stop(t+dur*1.6);
-    });
+    // Manus — hands reaching upward: plucked string with reverse-envelope swell
+    // Attack is soft, then it BLOOMS — the opposite of a normal pluck
+    const s=c.createOscillator();s.type='sawtooth';s.frequency.value=hz;
+    const s2=c.createOscillator();s2.type='triangle';s2.frequency.value=hz*2.01;// octave + slight detune
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=4;
+    // Reverse sweep — filter OPENS over time instead of closing
+    lp.frequency.setValueAtTime(hz*1.2,t);lp.frequency.exponentialRampToValueAtTime(hz*8,t+dur*0.6);
+    lp.frequency.exponentialRampToValueAtTime(hz*2,t+dur*1.2);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.08,t+0.02);// soft start
+    e.gain.linearRampToValueAtTime(vel*0.32,t+dur*0.4);// bloom
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
+    s.connect(lp);s2.connect(lp);lp.connect(e);e.connect(o);
+    s.start(t);s2.start(t);s.stop(t+dur*1.6);s2.stop(t+dur*1.6);
   }else if(rid==='pad'){
-    // Nubis — the cloud he floats on: ethereal pad, 4 sines with slow chorus LFOs
-    [hz,hz*1.26,hz*1.5,hz*1.875].forEach((n,i)=>{
-      const osc=c.createOscillator();osc.type='sine';osc.frequency.value=n;
-      // Per-note chorus LFO — different rates create shimmering cloud
-      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.2+i*0.15;
-      const lg=c.createGain();lg.gain.value=4+i*2;// increasing detune per note
-      lfo.connect(lg);lg.connect(osc.detune);
-      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=n*3;lp.Q.value=0.3;
+    // Nubis — Cocteau Twins cloud: detuned saws through formants, not clean sines
+    [hz,hz*1.189,hz*1.498].forEach((n,i)=>{// minor 3rd + 5th — darker than major
+      const s1=c.createOscillator();s1.type='sawtooth';s1.frequency.value=n;s1.detune.value=-8-i*3;
+      const s2=c.createOscillator();s2.type='sawtooth';s2.frequency.value=n;s2.detune.value=8+i*3;
+      // Slow chorus drift per voice
+      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.15+i*0.12;
+      const lg=c.createGain();lg.gain.value=6+i*3;
+      lfo.connect(lg);lg.connect(s1.detune);lg.connect(s2.detune);
+      // Formant — vowel quality, not clean LP
+      const bp=c.createBiquadFilter();bp.type='bandpass';
+      bp.frequency.value=[600,1000,2200][i];bp.Q.value=[4,3,2.5][i];
+      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=n*3;lp.Q.value=0.5;
       const e=c.createGain();e.gain.setValueAtTime(0,t);
-      e.gain.linearRampToValueAtTime(vel*0.1,t+0.15);
-      e.gain.setTargetAtTime(vel*0.06,t+0.15,dur*1.5);
-      e.gain.exponentialRampToValueAtTime(0.001,t+dur*4);
-      osc.connect(lp);lp.connect(e);e.connect(o);osc.start(t);lfo.start(t);
-      osc.stop(t+dur*4.1);lfo.stop(t+dur*4.1);
+      e.gain.linearRampToValueAtTime(vel*0.09,t+0.2);
+      e.gain.setTargetAtTime(vel*0.05,t+0.2,dur*1.2);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*3.5);
+      s1.connect(bp);s2.connect(bp);bp.connect(lp);lp.connect(e);e.connect(o);
+      s1.start(t);s2.start(t);lfo.start(t);
+      s1.stop(t+dur*3.6);s2.stop(t+dur*3.6);lfo.stop(t+dur*3.6);
     });
   }else if(rid==='arp'){
-    // Scala — the stairway to heaven: ascending double-stop with octave shimmer
-    const o1=c.createOscillator();o1.type='triangle';o1.frequency.value=hz;
-    const o2=c.createOscillator();o2.type='sine';o2.frequency.value=hz*2;// octave above — bell-like
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*6;lp.Q.value=1;
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.18,t+0.003);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.9);
-    o1.connect(lp);o2.connect(lp);lp.connect(e);e.connect(o);
-    o1.start(t);o2.start(t);o1.stop(t+dur+0.02);o2.stop(t+dur+0.02);
+    // Scala — stairway dissolving: pitch bends upward mid-note, like gravity failing
+    const s=c.createOscillator();s.type='triangle';s.frequency.value=hz;
+    // Pitch floats upward — the step lifts off
+    s.frequency.exponentialRampToValueAtTime(hz*1.06,t+dur*0.6);// quarter-tone rise
+    const s2=c.createOscillator();s2.type='sine';s2.frequency.value=hz*2;
+    s2.frequency.exponentialRampToValueAtTime(hz*2.12,t+dur*0.6);
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*5;lp.Q.value=2;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.22,t+0.004);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.1);
+    s.connect(lp);s2.connect(lp);lp.connect(e);e.connect(o);
+    s.start(t);s2.start(t);s.stop(t+dur*1.2);s2.stop(t+dur*1.2);
   }else if(rid==='shimmer'){
-    // Ocvlvs — eyes rolled back in ecstasy: dreamy detuned triangles with gentle phase drift
-    [-8,0,8].forEach(det=>{
-      const osc=c.createOscillator();osc.type='triangle';osc.frequency.value=hz*2;osc.detune.value=det;
-      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.3+Math.random()*0.2;
-      const lg=c.createGain();lg.gain.value=6;lfo.connect(lg);lg.connect(osc.detune);
-      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*4;lp.Q.value=0.5;
-      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.08,t+0.06);
-      e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
-      osc.connect(lp);lp.connect(e);e.connect(o);osc.start(t);lfo.start(t);
-      osc.stop(t+dur*2.1);lfo.stop(t+dur*2.1);
-    });
+    // Ocvlvs — eyes rolled back: detuned saws through allpass chain, phased and drifting
+    const s1=c.createOscillator();s1.type='sawtooth';s1.frequency.value=hz*2;s1.detune.value=-12;
+    const s2=c.createOscillator();s2.type='sawtooth';s2.frequency.value=hz*2;s2.detune.value=12;
+    // 2-stage allpass for phaser character
+    const ap1=c.createBiquadFilter();ap1.type='allpass';ap1.frequency.value=800;
+    const ap2=c.createBiquadFilter();ap2.type='allpass';ap2.frequency.value=1600;
+    const phaseLFO=c.createOscillator();phaseLFO.type='sine';phaseLFO.frequency.value=0.25;
+    const pg=c.createGain();pg.gain.value=400;
+    phaseLFO.connect(pg);pg.connect(ap1.frequency);pg.connect(ap2.frequency);
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*3;lp.Q.value=1;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.1,t+0.08);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
+    s1.connect(ap1);s2.connect(ap1);ap1.connect(ap2);ap2.connect(lp);lp.connect(e);e.connect(o);
+    s1.start(t);s2.start(t);phaseLFO.start(t);
+    s1.stop(t+dur*2.1);s2.stop(t+dur*2.1);phaseLFO.stop(t+dur*2.1);
   }else if(rid==='vocal'){
-    // Ecstatic vocal: 3 formants (ah-eh-oh), sustaining, with liturgical vibrato
-    const src=c.createOscillator();src.type='sawtooth';src.frequency.value=humanize(hz,0.008);
-    const vib=c.createOscillator();vib.type='sine';vib.frequency.value=5.2;
-    const vg=c.createGain();vg.gain.value=hz*0.006;
+    // Ecstatic vocal: saw through formants with wide vibrato — unhinged devotion
+    const src=c.createOscillator();src.type='sawtooth';src.frequency.value=humanize(hz,0.012);
+    // Wide vibrato — ecstatic, not controlled
+    const vib=c.createOscillator();vib.type='sine';vib.frequency.value=5.8;
+    const vg=c.createGain();vg.gain.value=hz*0.012;// wider than normal
     vib.connect(vg);vg.connect(src.frequency);
-    // Three formants for richer vowel
-    const f1=c.createBiquadFilter();f1.type='bandpass';f1.frequency.value=660;f1.Q.value=5;// ah
-    const f2=c.createBiquadFilter();f2.type='bandpass';f2.frequency.value=1100;f2.Q.value=4;// eh
-    const f3=c.createBiquadFilter();f3.type='bandpass';f3.frequency.value=2400;f3.Q.value=3;// presence
+    const f1=c.createBiquadFilter();f1.type='bandpass';f1.frequency.value=660;f1.Q.value=6;
+    const f2=c.createBiquadFilter();f2.type='bandpass';f2.frequency.value=1100;f2.Q.value=5;
+    const f3=c.createBiquadFilter();f3.type='bandpass';f3.frequency.value=2800;f3.Q.value=3;
     src.connect(f1);src.connect(f2);src.connect(f3);
-    const m1=c.createGain();m1.gain.value=0.5;
+    // Formant sweep — vowel shifts during sustain (ah→ee, upward ecstasy)
+    f1.frequency.setTargetAtTime(820,t,dur*0.8);// ah→eh
+    f2.frequency.setTargetAtTime(2200,t,dur*0.8);// eh→ee
+    const m1=c.createGain();m1.gain.value=0.45;
     const m2=c.createGain();m2.gain.value=0.35;
-    const m3=c.createGain();m3.gain.value=0.15;
+    const m3=c.createGain();m3.gain.value=0.2;
     f1.connect(m1);f2.connect(m2);f3.connect(m3);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.4,t+0.04);
-    e.gain.setTargetAtTime(vel*0.25,t+0.04,dur*0.5);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.38,t+0.03);
+    e.gain.setTargetAtTime(vel*0.22,t+0.03,dur*0.5);
     e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
     m1.connect(e);m2.connect(e);m3.connect(e);e.connect(o);
     src.start(t);vib.start(t);src.stop(t+dur*2.1);vib.stop(t+dur*2.1);
   }else if(rid==='texture'){
-    // Pulvis — sawdust in the workshop: gentle filtered noise with woody resonance
+    // Pulvis — sawdust becoming gold dust: noise with rising resonant sweep
     const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
-    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=400;bp.Q.value=2;
-    // Peaking filter at wood resonance frequency
-    const body=c.createBiquadFilter();body.type='peaking';body.frequency.value=280;body.Q.value=3;body.gain.value=6;
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.15,t+0.05);
-    e.gain.setTargetAtTime(vel*0.08,t+0.05,dur*0.6);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
-    src.connect(bp);bp.connect(body);body.connect(e);e.connect(o);src.start(t);src.stop(t+dur*1.6);
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.Q.value=5;
+    // Sweep upward — dust rising, defying gravity
+    bp.frequency.setValueAtTime(200,t);bp.frequency.exponentialRampToValueAtTime(1200,t+dur*2);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.18,t+0.04);
+    e.gain.setTargetAtTime(vel*0.1,t+0.04,dur*0.5);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
+    src.connect(bp);bp.connect(e);e.connect(o);src.start(t);src.stop(t+dur*2.1);
   }else if(rid==='rhythm'){
-    // Sandalia — the sandal tapping during levitation: soft wood-block with body tone
-    const osc=c.createOscillator();osc.type='triangle';
-    osc.frequency.setValueAtTime(hz*3,t);osc.frequency.exponentialRampToValueAtTime(hz*1.5,t+0.01);
-    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=hz*2;bp.Q.value=4;
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.25,t+0.002);
-    e.gain.exponentialRampToValueAtTime(0.001,t+0.06);
-    osc.connect(bp);bp.connect(e);e.connect(o);osc.start(t);osc.stop(t+0.08);
-    // Soft resonant body — the floor vibrating
-    const body=c.createOscillator();body.type='sine';body.frequency.value=hz*0.5;
-    const be=c.createGain();be.gain.setValueAtTime(vel*0.1,t);be.gain.exponentialRampToValueAtTime(0.001,t+0.04);
-    body.connect(be);be.connect(o);body.start(t);body.stop(t+0.05);
+    // Sandalia — bare feet lifting off stone: thud then absence
+    const thud=c.createOscillator();thud.type='sine';
+    thud.frequency.setValueAtTime(hz*0.5,t);thud.frequency.exponentialRampToValueAtTime(hz*0.25,t+0.04);
+    const ws=c.createWaveShaper();const curve=new Float32Array(256);
+    for(let i=0;i<256;i++){const x=(i/128)-1;curve[i]=Math.tanh(x*2);}ws.curve=curve;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.35,t+0.003);
+    e.gain.setTargetAtTime(0.001,t+0.003,0.06);
+    thud.connect(ws);ws.connect(e);e.connect(o);thud.start(t);thud.stop(t+0.15);
+    // Ghost resonance — the floor remembering the foot
+    const ghost=c.createOscillator();ghost.type='triangle';ghost.frequency.value=hz*1.5;
+    const ge=c.createGain();ge.gain.setValueAtTime(0,t+0.02);ge.gain.linearRampToValueAtTime(vel*0.06,t+0.06);
+    ge.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+    ghost.connect(ge);ge.connect(o);ghost.start(t);ghost.stop(t+0.25);
   }else{
-    // Fallback — gentle sine pluck
+    // Fallback — reverse swell sine (backwards bell, uncanny)
     const osc=c.createOscillator();osc.type='sine';osc.frequency.value=hz;
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.25,t+0.005);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.8);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.3,t+dur*0.7);// slow crescendo
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.85);// abrupt cut
     osc.connect(e);e.connect(o);osc.start(t);osc.stop(t+dur);
   }
 }
