@@ -1941,18 +1941,8 @@ function updateDensity(){
   updateJosephGravity(t);
   if(ROOM.masterGain)ROOM.masterGain.gain.setTargetAtTime(Math.max(1.0-n*0.012,0.88),t,0.5);
   applyModifiers();
-  // Dominant-saint ducking: the saint with the most relics plays at full volume,
-  // minority saints duck to 40% to avoid cross-key mud
-  const saintCounts={};
-  Object.values(VOICES).forEach(v=>{saintCounts[v.saint.id]=(saintCounts[v.saint.id]||0)+1;});
-  const maxCount=Math.max(...Object.values(saintCounts),0);
-  if(maxCount>0){
-    Object.values(VOICES).forEach(v=>{
-      const count=saintCounts[v.saint.id]||0;
-      const targetGain=count===maxCount?0.45:0.45*0.6;// minority saints duck to 60%
-      v.output.gain.setTargetAtTime(targetGain,t,0.3);
-    });
-  }
+  // No cross-saint ducking. Every relic plays at full voice regardless of saint mix.
+  // The collision between saints IS the instrument — augmented harmony or wild sample.
 }
 
 // ══════ MODIFIER REGISTRY ══════
