@@ -11,7 +11,7 @@
 :root{
   --bg:#0A0A0A;--cinnabar:#FF4500;--cinnabar-dim:rgba(255,69,0,.15);
   --w95:rgba(255,255,255,.92);--w80:rgba(255,255,255,.78);--w60:rgba(255,255,255,.58);
-  --w40:rgba(255,255,255,.38);--w20:rgba(255,255,255,.18);--w10:rgba(255,255,255,.08);
+  --w40:rgba(255,255,255,.38);--w30:rgba(255,255,255,.28);--w20:rgba(255,255,255,.18);--w10:rgba(255,255,255,.08);
   --w05:rgba(255,255,255,.04);--w02:rgba(255,255,255,.02);
   --saint-color:#FF4500;--glow-intensity:0;--completion-color:var(--saint-color);
   --convergence-pulse:0;
@@ -80,7 +80,7 @@ color:var(--saint-color);transition:color .3s;letter-spacing:.04em}
 #saint-key{font-size:.55rem;letter-spacing:.12em;color:var(--w40);
 border:1px solid var(--w10);padding:.15em .4em;border-radius:2px}
 #saint-vibe{font-family:'Instrument Serif',serif;font-style:italic;
-font-size:.65rem;color:var(--w20);letter-spacing:.04em;margin-left:auto}
+font-size:.65rem;color:var(--w40);letter-spacing:.04em;margin-left:auto}
 /* Cabinet relic layout — 3×3 grid of arched compartments */
 #relic-cabinet-wrap{flex:1;overflow-y:auto;padding:.6em .8em;
 scrollbar-width:thin;scrollbar-color:var(--w10) transparent}
@@ -91,10 +91,10 @@ border:1px solid var(--w10);background:var(--bg);transition:all .35s ease;overfl
 clip-path:polygon(0% 18%,8% 6%,20% 1%,50% 0%,80% 1%,92% 6%,100% 18%,100% 100%,0% 100%)}
 .cabinet-niche .relic-img{width:72%;height:72%;object-fit:contain;pointer-events:none;
 filter:brightness(1.1) contrast(1.05);transition:all .4s ease;position:absolute;top:12%;z-index:0}
-.cabinet-niche .rname{font-size:.38rem;letter-spacing:.1em;text-transform:uppercase;color:var(--w60);
+.cabinet-niche .rname{font-size:.48rem;letter-spacing:.1em;text-transform:uppercase;color:var(--w60);
 text-align:center;line-height:1.1;padding:.15em .3em;position:relative;z-index:2;
 background:linear-gradient(transparent,rgba(10,10,10,.92) 30%);width:100%;transition:color .3s;font-weight:400}
-.cabinet-niche .rtype{font-size:.26rem;letter-spacing:.06em;text-transform:uppercase;color:var(--w20);
+.cabinet-niche .rtype{font-size:.4rem;letter-spacing:.06em;text-transform:uppercase;color:var(--w20);
 position:absolute;top:.2em;right:.3em;z-index:2;font-weight:500;background:rgba(10,10,10,.6);
 padding:.08em .2em;border-radius:2px}
 .cabinet-niche:hover{border-color:var(--saint-color);
@@ -223,10 +223,10 @@ transition:opacity .8s ease;pointer-events:none}
 border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;
 transition:all .4s ease;pointer-events:all;background:transparent;cursor:crosshair}
 .slot::before{content:attr(data-label);position:absolute;bottom:-1.5em;
-font-size:.30rem;letter-spacing:.16em;text-transform:uppercase;
-color:rgba(255,255,255,.10);white-space:nowrap;transition:color .5s;pointer-events:none}
+font-size:.4rem;letter-spacing:.16em;text-transform:uppercase;
+color:rgba(255,255,255,.2);white-space:nowrap;transition:color .5s;pointer-events:none}
 .slot .slot-icon{display:none}
-.slot .slot-name{position:absolute;bottom:-2.6em;font-size:.28rem;letter-spacing:.12em;
+.slot .slot-name{position:absolute;bottom:-2.6em;font-size:.4rem;letter-spacing:.12em;
 text-transform:uppercase;color:rgba(255,255,255,.32);white-space:nowrap;text-align:center;
 pointer-events:none;opacity:0;transition:opacity .4s}
 .slot .slot-relic-img{width:92%;height:92%;object-fit:contain;position:absolute;
@@ -281,23 +281,25 @@ display:flex;align-items:center;justify-content:center;font-size:1rem;transition
 #wax-seal.stamped{opacity:1;background:var(--cinnabar);border-color:color-mix(in srgb,var(--completion-color) 60%,transparent);box-shadow:0 0 35px rgba(255,69,0,.3),0 0 12px color-mix(in srgb,var(--completion-color) 15%,transparent)}
 #seal-label{font-size:.42rem;letter-spacing:.18em;text-transform:uppercase;color:var(--w20)}
 #cert-text{font-family:'Instrument Serif',serif;font-style:italic;font-size:.55rem;color:var(--w20);text-align:center;line-height:1.6;padding:0 .4em}
-/* Votive tray — structured row at bottom of reliquary, inside the frame */
-#votive-tray{display:flex;justify-content:space-evenly;align-items:flex-end;
-width:100%;padding:0.3em 1em;gap:0;position:absolute;bottom:0;left:0;z-index:5;
-background:linear-gradient(to top,rgba(10,10,10,.9) 0%,transparent 100%)}
-.votive{display:flex;flex-direction:column;align-items:center;gap:.1em;
-cursor:pointer;padding:.25em .15em;border:none;
-transition:all .4s ease;opacity:.35;flex:1;max-width:56px}
-.votive-icon{width:32px;height:32px;fill:none;stroke:rgba(218,165,32,.45);stroke-width:.8;
-stroke-linecap:round;stroke-linejoin:round;transition:all .4s ease}
-.votive-name{font-size:.18rem;letter-spacing:.12em;text-transform:uppercase;
-color:rgba(218,165,32,.25);transition:color .4s;white-space:nowrap}
-.votive:hover{opacity:.6}
-.votive:hover .votive-icon{stroke:rgba(218,165,32,.7)}
-.votive:hover .votive-name{color:rgba(218,165,32,.5)}
-.votive.active{opacity:1}
-.votive.active .votive-icon{stroke:rgba(218,165,32,.95);filter:drop-shadow(0 0 5px rgba(218,165,32,.4))}
-.votive.active .votive-name{color:rgba(218,165,32,.75)}
+/* Votive shelves — positioned in left and right nave columns */
+#votive-tray{display:contents}
+.votive-shelf{position:absolute;top:18%;bottom:10%;display:flex;flex-direction:column;
+justify-content:space-evenly;align-items:center;z-index:6;width:56px;padding:4px 0;pointer-events:all}
+.votive-shelf-left{left:6px}
+.votive-shelf-right{right:6px}
+.votive{display:flex;flex-direction:column;align-items:center;gap:4px;
+cursor:pointer;padding:5px 3px;border:1px solid transparent;border-radius:4px;
+transition:all .3s ease;opacity:.55;min-width:48px}
+.votive-icon{width:26px;height:26px;fill:none;stroke:rgba(218,165,32,.65);stroke-width:1;
+stroke-linecap:round;stroke-linejoin:round;transition:all .3s ease}
+.votive-name{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.05em;text-transform:uppercase;
+color:rgba(218,165,32,.5);transition:color .3s;white-space:nowrap;text-align:center}
+.votive:hover{opacity:.85;border-color:rgba(218,165,32,.15);background:rgba(218,165,32,.04)}
+.votive:hover .votive-icon{stroke:rgba(218,165,32,.9)}
+.votive:hover .votive-name{color:rgba(218,165,32,.7)}
+.votive.active{opacity:1;border-color:rgba(218,165,32,.25);background:rgba(218,165,32,.06)}
+.votive.active .votive-icon{stroke:rgba(218,165,32,1);filter:drop-shadow(0 0 5px rgba(218,165,32,.4))}
+.votive.active .votive-name{color:rgba(218,165,32,.9);font-weight:400}
 @keyframes votivePulse{0%,100%{opacity:.9}50%{opacity:1}}
 #locus-label{position:absolute;bottom:1%;left:50%;transform:translateX(-50%);
 font-family:'Instrument Serif',serif;font-style:italic;font-size:.45rem;
@@ -353,13 +355,13 @@ flex-shrink:0;overflow:hidden;touch-action:none}
 /* ── Saint SVG: bigger for fat finger targeting ── */
 #body-svg{max-width:75%;margin:0 auto}
 
-/* ── Votives: tiny row below frame, not overlapping saint ── */
-.votive{position:static;transform:none;display:inline-flex;padding:.15em}
-.votive:hover{transform:scale(1.05)}
+/* ── Votives: side shelves shrink on mobile ── */
+.votive-shelf{width:34px;top:12%;bottom:6%}
+.votive{padding:2px 1px}
+.votive:hover{transform:none}
 .votive.active{animation:none}
-.votive-icon{width:18px;height:18px}
-.votive-name{font-size:.15rem}
-#votive-tray{padding:0 .3em;gap:0}
+.votive-icon{width:16px;height:16px}
+.votive-name{font-size:6px;letter-spacing:.01em}
 #locus-label{position:static;transform:none;margin-top:.2em;font-size:.5rem}
 #idle-msg{font-size:.5rem}
 #body-title{font-size:.45rem}
@@ -1515,7 +1517,7 @@ flex-shrink:0;overflow:hidden;touch-action:none}
     <div id="body-title">Reliquary</div>
     <canvas id="visualizer"></canvas>
     <!-- ═══ VOTIVES — structured tray at base of reliquary ═══ -->
-    <div id="votive-tray">
+    <div id="votive-tray"><div class="votive-shelf votive-shelf-left">
     <div class="votive" data-id="campana" title="Campana — bell tower">
       <svg class="votive-icon" viewBox="0 0 48 48">
         <path d="M14,34 Q14,18 24,14 Q34,18 34,34"/>
@@ -1587,6 +1589,7 @@ flex-shrink:0;overflow:hidden;touch-action:none}
       </svg>
       <span class="votive-name">Liber</span>
     </div>
+    </div><div class="votive-shelf votive-shelf-right">
     <div class="votive" data-id="aqua" title="Aqua — holy water">
       <svg class="votive-icon" viewBox="0 0 48 48">
         <path d="M24,6 Q30,16 32,24 Q34,34 24,38 Q14,34 16,24 Q18,16 24,6"/>
@@ -1651,7 +1654,7 @@ flex-shrink:0;overflow:hidden;touch-action:none}
       </svg>
       <span class="votive-name">Lapis</span>
     </div>
-    </div><!-- /votive-tray -->
+    </div></div><!-- /votive-tray -->
     <div id="locus-label"></div>
   </div>
   <div id="authenticum">
@@ -1868,7 +1871,7 @@ function initAudio(){
   // Room bus — cathedral convolver, bypasses compressor
   ROOM.ctx=c;ROOM.convolver=buildCathedralConvolver(c);
   ROOM.masterGain=c.createGain();ROOM.masterGain.gain.value=1.0;
-  ROOM.busDry=c.createGain();ROOM.busDry.gain.value=0.28;
+  ROOM.busDry=c.createGain();ROOM.busDry.gain.value=0.36;
   ROOM.busSend=c.createGain();ROOM.busSend.gain.value=0.85;
   ROOM.busWet=c.createGain();ROOM.busWet.gain.value=0.9;
   ROOM.masterGain.connect(ROOM.busDry);ROOM.masterGain.connect(ROOM.busSend);
@@ -1933,18 +1936,6 @@ function updateDensity(){
   updateJosephGravity(t);
   if(ROOM.masterGain)ROOM.masterGain.gain.setTargetAtTime(Math.max(1.0-n*0.012,0.88),t,0.5);
   applyModifiers();
-  // Dominant-saint ducking: the saint with the most relics plays at full volume,
-  // minority saints duck to 40% to avoid cross-key mud
-  const saintCounts={};
-  Object.values(VOICES).forEach(v=>{saintCounts[v.saint.id]=(saintCounts[v.saint.id]||0)+1;});
-  const maxCount=Math.max(...Object.values(saintCounts),0);
-  if(maxCount>0){
-    Object.values(VOICES).forEach(v=>{
-      const count=saintCounts[v.saint.id]||0;
-      const targetGain=count===maxCount?0.7:0.7*0.65;// minority saints duck to 65% (was 40% — too crushing)
-      v.output.gain.setTargetAtTime(targetGain,t,0.3);
-    });
-  }
 }
 
 // ══════ MODIFIER REGISTRY ══════
@@ -3547,7 +3538,7 @@ function synthCereus(ctx,out){
   const ns=ctx.createBufferSource();ns.buffer=getPinkNoise(ctx);ns.loop=true;
   const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1200;lp.Q.value=0.5;
   const hs=ctx.createBiquadFilter();hs.type='highshelf';hs.frequency.value=3000;hs.gain.value=-8;
-  const fg=ctx.createGain();fg.gain.value=0.014;
+  const fg=ctx.createGain();fg.gain.value=0.026;
   const flfo=ctx.createOscillator();flfo.type='sine';flfo.frequency.value=0.7;
   const flg=ctx.createGain();flg.gain.value=0.004;
   flfo.connect(flg);flg.connect(fg.gain);
@@ -3626,94 +3617,73 @@ function synthCalix(ctx,out){
     se.gain.exponentialRampToValueAtTime(0.0001,t+8);
     sr.connect(se);se.connect(out);sr.start(t);sr.stop(t+8.5);
   }
-  bell(0.035);
+  bell(0.06);
   let bellTimer;
-  function scheduleBell(){bellTimer=setTimeout(()=>{if(alive){bell(0.035);scheduleBell();}},55000+Math.random()*35000);}
+  function scheduleBell(){bellTimer=setTimeout(()=>{if(alive){bell(0.06);scheduleBell();}},22000+Math.random()*25000);}
   scheduleBell();
   return{stop(){alive=false;clearTimeout(bellTimer);}};
 }
 
 function synthLilium(ctx,out){
-  // Petal pad: two detuned sines a fifth apart, gentle and warm
-  const o1=ctx.createOscillator();o1.type='sine';o1.frequency.value=440;o1.detune.value=(Math.random()-0.5)*8;
-  const o2=ctx.createOscillator();o2.type='sine';o2.frequency.value=660;o2.detune.value=(Math.random()-0.5)*8;
-  const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800;lp.Q.value=0.5;
-  const mg=ctx.createGain();mg.gain.value=0.024;
-  const blfo=ctx.createOscillator();blfo.type='sine';blfo.frequency.value=0.06;
-  const bg=ctx.createGain();bg.gain.value=0.012;
-  blfo.connect(bg);bg.connect(mg.gain);
-  o1.connect(lp);o2.connect(lp);lp.connect(mg);mg.connect(out);
-  o1.start();o2.start();blfo.start();
-  // Soft breathy texture
+  // Lily breath — warm air shimmer, not pitched, no key clashes
   const ns=ctx.createBufferSource();ns.buffer=getPinkNoise(ctx);ns.loop=true;
-  const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2400;bp.Q.value=1.8;
-  const ng=ctx.createGain();ng.gain.value=0.016;
-  ns.connect(bp);bp.connect(ng);ng.connect(out);ns.start();
-  return{stop(){try{o1.stop();o2.stop();blfo.stop();ns.stop();}catch(e){}},
-    scaleUp(f,t,d){mg.gain.setTargetAtTime(0.024*f,t,d*0.3);ng.gain.setTargetAtTime(0.016*f,t,d*0.3);}};
+  const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1400;bp.Q.value=1.2;
+  const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2800;lp.Q.value=0.3;
+  const breathLFO=ctx.createOscillator();breathLFO.type='sine';breathLFO.frequency.value=0.12;
+  const breathG=ctx.createGain();breathG.gain.value=0.006;
+  breathLFO.connect(breathG);
+  const ng=ctx.createGain();ng.gain.value=0.022;
+  breathG.connect(ng.gain);
+  ns.connect(bp);bp.connect(lp);lp.connect(ng);ng.connect(out);ns.start();breathLFO.start();
+  const sh1=ctx.createOscillator();sh1.type='sine';sh1.frequency.value=1200;
+  const sh2=ctx.createOscillator();sh2.type='sine';sh2.frequency.value=1803;
+  const drift=ctx.createOscillator();drift.type='sine';drift.frequency.value=0.03;
+  const dg=ctx.createGain();dg.gain.value=5;
+  drift.connect(dg);dg.connect(sh2.frequency);
+  const shLP=ctx.createBiquadFilter();shLP.type='lowpass';shLP.frequency.value=2200;shLP.Q.value=0.3;
+  const sg=ctx.createGain();sg.gain.value=0.008;
+  sh1.connect(shLP);sh2.connect(shLP);shLP.connect(sg);sg.connect(out);
+  sh1.start();sh2.start();drift.start();
+  return{stop(){try{ns.stop();breathLFO.stop();sh1.stop();sh2.stop();drift.stop();}catch(e){}},
+    scaleUp(f,t,d){ng.gain.setTargetAtTime(0.022*f,t,d*0.3);sg.gain.setTargetAtTime(0.008*f,t,d*0.3);}};
 }
 
 function synthLiber(ctx,out){
-  // Warm vocal room — not menacing, not horror. The sound of a handful of monks
-  // murmuring vespers in a stone chapel. Soft, rounded, human.
-  // Triangle waves (not saws) through gentle lowpass (not bandpass) with tanh saturation
-  // to round everything warm, like Symeon's Canis approach but higher and vocal.
-  const voices=[
-    {hz:130,gain:0.04},  // baritone unison 1
-    {hz:132,gain:0.038}, // baritone unison 2 (1.5Hz beating = gentle chorus)
-    {hz:196,gain:0.032}, // tenor — a fifth above
-    {hz:198,gain:0.030}, // tenor 2 (beating)
-    {hz:262,gain:0.020}, // alto — octave above baritone
-  ];
-  const oscs=[];const gains=[];
-  // Shared tanh saturation — warms and rounds the signal like analog tape
-  const sat=ctx.createWaveShaper();
-  const curve=new Float32Array(256);
-  for(let i=0;i<256;i++){const x=(i/128)-1;curve[i]=Math.tanh(x*1.5);}
-  sat.curve=curve;sat.oversample='2x';
-  // Gentle lowpass — no harsh harmonics, just warm body
-  const masterLP=ctx.createBiquadFilter();masterLP.type='lowpass';masterLP.frequency.value=1800;masterLP.Q.value=0.5;
-  sat.connect(masterLP);masterLP.connect(out);
-  voices.forEach(v=>{
-    const o=ctx.createOscillator();o.type='triangle';// soft harmonics, not buzzy
-    o.frequency.value=v.hz;o.detune.value=(Math.random()-0.5)*8;
-    const g=ctx.createGain();g.gain.value=v.gain;
-    // Very slow breathing — 20-30 second cycles
-    const amLfo=ctx.createOscillator();amLfo.type='sine';
-    amLfo.frequency.value=0.035+Math.random()*0.03;
-    const amG=ctx.createGain();amG.gain.value=v.gain*0.4;
-    amLfo.connect(amG);amG.connect(g.gain);
-    o.connect(g);g.connect(sat);
-    o.start();amLfo.start();
-    oscs.push(o,amLfo);gains.push(g);
-  });
-  // Gentle pitch drift — human imperfection
-  const driftLFO=ctx.createOscillator();driftLFO.type='sine';driftLFO.frequency.value=0.03;
-  const driftG=ctx.createGain();driftG.gain.value=2;// ±2 cents — subtle
-  driftLFO.connect(driftG);
-  oscs.filter(o=>o.type==='triangle').forEach(o=>driftG.connect(o.detune));
-  driftLFO.start();
-  oscs.push(driftLFO);
-
-  // Page turn: pink noise shaped by 20 Hz AM (papery flutter), bandpass 1200–5000 Hz
+  // Sacred book — whispered prayer murmur + page turns, no pitched content
   let alive=true;
+  const oscs=[];const gains=[];
+  const murmurSrc=ctx.createBufferSource();murmurSrc.buffer=getPinkNoise(ctx);murmurSrc.loop=true;
+  const f1=ctx.createBiquadFilter();f1.type='bandpass';f1.frequency.value=450;f1.Q.value=3;
+  const f2=ctx.createBiquadFilter();f2.type='bandpass';f2.frequency.value=1100;f2.Q.value=2.5;
+  const f3=ctx.createBiquadFilter();f3.type='bandpass';f3.frequency.value=2500;f3.Q.value=2;
+  const m1=ctx.createGain();m1.gain.value=0.028;
+  const m2=ctx.createGain();m2.gain.value=0.020;
+  const m3=ctx.createGain();m3.gain.value=0.012;
+  murmurSrc.connect(f1);murmurSrc.connect(f2);murmurSrc.connect(f3);
+  f1.connect(m1);f2.connect(m2);f3.connect(m3);
+  m1.connect(out);m2.connect(out);m3.connect(out);
+  gains.push(m1,m2,m3);
+  const syllLFO=ctx.createOscillator();syllLFO.type='sine';syllLFO.frequency.value=2.5;
+  const syllG=ctx.createGain();syllG.gain.value=0.008;
+  syllLFO.connect(syllG);syllG.connect(m1.gain);syllG.connect(m2.gain);
+  const phraseLFO=ctx.createOscillator();phraseLFO.type='sine';phraseLFO.frequency.value=0.065;
+  const phraseG=ctx.createGain();phraseG.gain.value=0.012;
+  phraseLFO.connect(phraseG);phraseG.connect(m1.gain);phraseG.connect(m2.gain);phraseG.connect(m3.gain);
+  murmurSrc.start();syllLFO.start();phraseLFO.start();
+  oscs.push(murmurSrc,syllLFO,phraseLFO);
   function pageTurn(){
     if(!alive)return;
     const t=ctx.currentTime;
     const pl=Math.floor(ctx.sampleRate*0.18);
     const pb=ctx.createBuffer(1,pl,ctx.sampleRate),pd2=pb.getChannelData(0);
-    // Pink noise modulated by 20 Hz sine for paper flutter texture
     const pinkD=getPinkNoise(ctx).getChannelData(0);
-    for(let i=0;i<pl;i++){
-      const env=Math.sin(Math.PI*i/pl); // smooth rise-fall
-      pd2[i]=pinkD[i%pinkD.length]*Math.sin(2*Math.PI*20*i/ctx.sampleRate)*env;
-    }
+    for(let i=0;i<pl;i++){const env=Math.sin(Math.PI*i/pl);pd2[i]=pinkD[i%pinkD.length]*Math.sin(2*Math.PI*20*i/ctx.sampleRate)*env;}
     const ps=ctx.createBufferSource();ps.buffer=pb;
     const php=ctx.createBiquadFilter();php.type='highpass';php.frequency.value=1200;
     const plp=ctx.createBiquadFilter();plp.type='lowpass';plp.frequency.value=5000;
-    const pg=ctx.createGain();pg.gain.value=0.03;
+    const pg=ctx.createGain();pg.gain.value=0.04;
     ps.connect(php);php.connect(plp);plp.connect(pg);pg.connect(out);ps.start(t);
-    setTimeout(pageTurn,14000+Math.random()*18000);
+    setTimeout(pageTurn,12000+Math.random()*16000);
   }
   pageTurn();
   return{stop(){alive=false;oscs.forEach(o=>{try{o.stop();}catch(e){}});},
@@ -3724,21 +3694,18 @@ function synthLapis(ctx,out){
   // Liturgical stone floor: deep room resonance (near 110 Hz "holy frequency")
   // with occasional rubato footstep pairs — synthesized impacts, not noise bursts
   // Organ pedal: stacked harmonics instead of single sine
-  const harmonics=[80,160,240,320];
-  const hAmps=[0.028,0.018,0.01,0.005];
-  const organLP=ctx.createBiquadFilter();organLP.type='lowpass';organLP.frequency.value=400;organLP.Q.value=0.5;
+  // Single 80Hz sub-bass room bloom — below any saint's root, felt not heard
+  const roomSine=ctx.createOscillator();roomSine.type='sine';roomSine.frequency.value=80;
+  const roomLP=ctx.createBiquadFilter();roomLP.type='lowpass';roomLP.frequency.value=120;roomLP.Q.value=0.5;
+  const roomGain=ctx.createGain();roomGain.gain.value=0.05;
   const organG=ctx.createGain();organG.gain.value=0;
-  organG.gain.linearRampToValueAtTime(1,ctx.currentTime+2); // 2s fade-in
-  const organOscs=harmonics.map((hz,i)=>{
-    const o=ctx.createOscillator();o.type='sine';o.frequency.value=hz;
-    const g=ctx.createGain();g.gain.value=hAmps[i];
-    o.connect(g);g.connect(organLP);o.start();return o;
-  });
-  organLP.connect(organG);organG.connect(out);
-  // Breathing LFO on organ
+  organG.gain.linearRampToValueAtTime(1,ctx.currentTime+2);
+  roomSine.connect(roomLP);roomLP.connect(roomGain);roomGain.connect(organG);organG.connect(out);
+  const organOscs=[roomSine];
   const olfo=ctx.createOscillator();olfo.type='sine';olfo.frequency.value=0.03;
-  const og=ctx.createGain();og.gain.value=0.006;
-  olfo.connect(og);og.connect(organG.gain);olfo.start();
+  const og=ctx.createGain();og.gain.value=0.015;
+  olfo.connect(og);og.connect(roomGain.gain);
+  roomSine.start();olfo.start();
 
   let alive=true;
   // Footstep: synthesized impact using sine with pitch envelope (not a noise burst)
@@ -3860,12 +3827,12 @@ function synthCampana(ctx,out,gainMult){
     lp.frequency.setValueAtTime(500,t);lp.frequency.exponentialRampToValueAtTime(3000,t+3);
     const e=ctx.createGain();
     e.gain.setValueAtTime(0,t);
-    e.gain.linearRampToValueAtTime(gm*0.04*amp,t+0.008);
+    e.gain.linearRampToValueAtTime(gm*0.07*amp,t+0.008);
     e.gain.exponentialRampToValueAtTime(0.0001,t+10/dk);
     o.connect(lp);lp.connect(e);e.connect(out);o.start(t);o.stop(t+10/dk+0.3);
   });
   let alive=true,bellTimer;
-  function scheduleBell(){bellTimer=setTimeout(()=>{if(alive){synthCampana(ctx,out,gm);scheduleBell();}},40000+Math.random()*50000);}
+  function scheduleBell(){bellTimer=setTimeout(()=>{if(alive){synthCampana(ctx,out,gm);scheduleBell();}},25000+Math.random()*35000);}
   scheduleBell();
   return{stop(){alive=false;clearTimeout(bellTimer);}};
 }
@@ -4259,8 +4226,18 @@ function onDragEnd(ev){
   document.querySelectorAll('.slot.dragover').forEach(s=>s.classList.remove('dragover'));
   document.querySelectorAll('.illum-zone.hover').forEach(z=>z.classList.remove('hover'));
   document.querySelectorAll('.relic-cell.dragging').forEach(c=>c.classList.remove('dragging'));
-  // Kill audition
+  // Kill audition — fully clean up persistent oscillators (acid, screw LFO)
   if(AC.auditionGain)AC.auditionGain.gain.setTargetAtTime(0,AC.ctx.currentTime,0.03);
+  if(auditionVoice){
+    if(auditionVoice._acidOsc)try{auditionVoice._acidOsc.stop();auditionVoice._acidOsc=null;}catch(e){}
+    if(auditionVoice._acidLp)try{auditionVoice._acidLp.disconnect();}catch(e){}
+    if(auditionVoice._acidGain)try{auditionVoice._acidGain.disconnect();}catch(e){}
+    if(auditionVoice.output&&auditionVoice.output._screwLfo)try{auditionVoice.output._screwLfo.stop();}catch(e){}
+    if(auditionVoice._lfoFilter)try{auditionVoice._lfoFilter.disconnect();}catch(e){}
+    if(auditionVoice.saint)releaseSaintLFO(auditionVoice.saint);
+    const avOut=auditionVoice.output;
+    setTimeout(()=>{try{avOut.disconnect();}catch(e){}},300);
+  }
   auditionVoice=null;
 
   if(!dragging){slotDragStart=null;return;}
