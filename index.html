@@ -1857,7 +1857,9 @@ function initAudio(){
   AC.ctx=c;
   AC.analyser=c.createAnalyser();AC.analyser.fftSize=256;AC.analyser.connect(c.destination);
   AC.masterLPF=c.createBiquadFilter();AC.masterLPF.type='lowpass';AC.masterLPF.frequency.value=18000;AC.masterLPF.connect(AC.analyser);
-  AC.comp=c.createDynamicsCompressor();AC.comp.threshold.value=-18;AC.comp.ratio.value=2;AC.comp.attack.value=0.01;AC.comp.release.value=0.15;AC.comp.connect(AC.masterLPF);
+  AC.comp=c.createDynamicsCompressor();AC.comp.threshold.value=-8;AC.comp.ratio.value=1.8;AC.comp.attack.value=0.012;AC.comp.release.value=0.35;AC.comp.connect(AC.masterLPF);
+  // Gain staging: threshold raised from -18 to -8 so 1-2 voices pass uncompressed.
+  // Release lengthened from 150ms to 350ms to reduce pumping on transient-heavy voices.
   AC.sharedFilter=c.createBiquadFilter();AC.sharedFilter.type='lowpass';AC.sharedFilter.frequency.value=6000;AC.sharedFilter.Q.value=0.7;AC.sharedFilter.connect(AC.comp);
   AC.master=c.createGain();AC.master.gain.value=0.72;AC.master.connect(AC.sharedFilter);
   buildConvolver(c);
@@ -1925,10 +1927,12 @@ function updateDensity(){
   const n=Object.keys(VOICES).length;if(!AC.ctx)return;const t=AC.ctx.currentTime+0.05;
   // Density should build energy, not crush it. Gentle compression increase,
   // slight LPF warmth, but gain stays strong. More relics = fuller, not quieter.
-  AC.comp.ratio.setTargetAtTime(Math.min(2+(n/9)*1.2,3.2),t,0.1);
-  AC.reverbWet.gain.setTargetAtTime(Math.min(0.25+(n/9)*0.2,0.45),t,0.1);
-  AC.masterLPF.frequency.setTargetAtTime(Math.max(18000-(n/9)*3000,15000),t,0.1);
-  AC.master.gain.setTargetAtTime(Math.max(0.72-(n/9)*0.08,0.64),t,0.1);
+  // Compression scales gently — threshold headroom means we don't need aggressive ratios
+  AC.comp.ratio.setTargetAtTime(Math.min(1.8+(n/9)*1.4,3.2),t,0.1);
+  AC.reverbWet.gain.setTargetAtTime(Math.min(0.2+(n/9)*0.2,0.4),t,0.1);
+  AC.masterLPF.frequency.setTargetAtTime(Math.max(19000-(n/9)*2000,17000),t,0.1);
+  // Master gain compensates for lower voice gain (0.45 vs old 0.7)
+  AC.master.gain.setTargetAtTime(Math.max(0.92-(n/9)*0.15,0.77),t,0.1);
   document.documentElement.style.setProperty('--glow-intensity',Math.min(n/9,1));
   updateJosephGravity(t);
   if(ROOM.masterGain)ROOM.masterGain.gain.setTargetAtTime(Math.max(1.0-n*0.012,0.88),t,0.5);
@@ -1941,7 +1945,7 @@ function updateDensity(){
   if(maxCount>0){
     Object.values(VOICES).forEach(v=>{
       const count=saintCounts[v.saint.id]||0;
-      const targetGain=count===maxCount?0.7:0.7*0.65;// minority saints duck to 65% (was 40% — too crushing)
+      const targetGain=count===maxCount?0.45:0.45*0.6;// minority saints duck to 60%
       v.output.gain.setTargetAtTime(targetGain,t,0.3);
     });
   }
@@ -3432,7 +3436,7 @@ function releaseSaintLFO(saint){
 
 // ══════ VOICE BUILDER ══════
 function buildVoice(relic,saint,outputNode){
-  const c=AC.ctx,vg=c.createGain();vg.gain.value=0.7;
+  const c=AC.ctx,vg=c.createGain();vg.gain.value=0.45;// lowered from 0.7 — gives compressor headroom
   let dest=outputNode||AC.master;
 
   // --- Polyrhythmic LFO: amplitude breathing ---
@@ -3547,7 +3551,7 @@ function synthCereus(ctx,out){
   const ns=ctx.createBufferSource();ns.buffer=getPinkNoise(ctx);ns.loop=true;
   const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1200;lp.Q.value=0.5;
   const hs=ctx.createBiquadFilter();hs.type='highshelf';hs.frequency.value=3000;hs.gain.value=-8;
-  const fg=ctx.createGain();fg.gain.value=0.014;
+  const fg=ctx.createGain();fg.gain.value=0.028;// doubled from 0.014 — was inaudible per QA
   const flfo=ctx.createOscillator();flfo.type='sine';flfo.frequency.value=0.7;
   const flg=ctx.createGain();flg.gain.value=0.004;
   flfo.connect(flg);flg.connect(fg.gain);
@@ -3920,7 +3924,7 @@ function triggerLocusSanctus(){
   });
   // 3-minute decay: saint song fades over 180 seconds then sequencer stops
   if(locusFadeTimer)clearTimeout(locusFadeTimer);
-  AC.master.gain.setTargetAtTime(0.64,t,0.5);// reset to full first
+  AC.master.gain.setTargetAtTime(0.77,t,0.5);// reset to full first
   AC.master.gain.setTargetAtTime(0.001,t+5,55);// exponential decay over ~3 min (tau=55s → ~99% gone at 5*55=275s)
   locusFadeTimer=setTimeout(()=>{
     // After 3 minutes, stop the sequencer gracefully
@@ -3982,13 +3986,13 @@ function playRelicPreview(relic,saint){
   }
   // Build a temporary voice and trigger it with a representative pattern step
   const c=AC.ctx,t=c.currentTime;
-  const vg=c.createGain();vg.gain.value=0.7;
+  const vg=c.createGain();vg.gain.value=0.55;// preview slightly louder than sequenced voice for clarity
   vg.connect(AC.master);
   if(saint.id!=='bartholomew')vg.connect(AC.reverbSend);
   const tempVoice={output:vg,pattern:null,synthFn,saint,relic};
   const hz=saint.freq;
   const dur=STEP_DUR*0.85;
-  synthFn(c,tempVoice,t,dur,hz,0.7,false,false,0);
+  synthFn(c,tempVoice,t,dur,hz,0.8,false,false,0);// vel 0.8 for clear preview
   // Fade out the gain node after 2 seconds to clean up
   vg.gain.setTargetAtTime(0,t+1.5,0.3);
   setTimeout(()=>{try{vg.disconnect();}catch(e){}},3000);
