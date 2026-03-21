@@ -291,23 +291,28 @@ display:flex;align-items:center;justify-content:center;font-size:1rem;transition
 #seal-label{font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;color:var(--w30)}
 #cert-text{font-family:'Instrument Serif',serif;font-style:italic;font-size:.55rem;color:var(--w30);text-align:center;line-height:1.6;padding:0 .4em}
 /* Votive shelves — positioned in left and right nave columns */
-.votive-shelf{position:absolute;top:14%;bottom:8%;display:flex;flex-direction:column;
-justify-content:space-evenly;align-items:center;z-index:6;width:68px;padding:4px 0;pointer-events:all}
-.votive-shelf-left{left:10px}
-.votive-shelf-right{right:10px}
-.votive{display:flex;flex-direction:column;align-items:center;gap:4px;
-cursor:pointer;padding:6px 4px;border:1px solid transparent;border-radius:4px;
-transition:all .3s ease;opacity:.7;min-width:56px}
-.votive-icon{width:32px;height:32px;fill:none;stroke:rgba(218,165,32,.7);stroke-width:1;
-stroke-linecap:round;stroke-linejoin:round;transition:all .3s ease}
-.votive-name{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.05em;text-transform:uppercase;
-color:rgba(218,165,32,.6);transition:color .3s;white-space:nowrap;text-align:center}
-.votive:hover{opacity:.85;border-color:rgba(218,165,32,.15);background:rgba(218,165,32,.04)}
-.votive:hover .votive-icon{stroke:rgba(218,165,32,.9)}
-.votive:hover .votive-name{color:rgba(218,165,32,.7)}
-.votive.active{opacity:1;border-color:rgba(218,165,32,.25);background:rgba(218,165,32,.06)}
-.votive.active .votive-icon{stroke:rgba(218,165,32,1);filter:drop-shadow(0 0 5px rgba(218,165,32,.4))}
-.votive.active .votive-name{color:rgba(218,165,32,.9);font-weight:400}
+/* Votive predella — horizontal tray at base of reliquary, like altar candle shelf */
+#votive-tray{position:absolute;bottom:0;left:0;right:0;z-index:6;
+display:flex;align-items:flex-end;justify-content:center;gap:0;
+padding:2px 8px 6px;pointer-events:auto;
+background:linear-gradient(to top,rgba(0,0,0,.5) 0%,rgba(0,0,0,.2) 70%,transparent 100%)}
+.votive{display:flex;flex-direction:column;align-items:center;gap:2px;
+cursor:pointer;padding:3px 5px 4px;border:none;border-radius:0;
+transition:all .35s ease;opacity:.5;flex:0 1 auto;position:relative}
+.votive::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:1px;
+background:rgba(218,165,32,0);transition:background .3s}
+.votive-icon{width:20px;height:20px;fill:none;stroke:rgba(218,165,32,.5);stroke-width:1;
+stroke-linecap:round;stroke-linejoin:round;transition:all .35s ease}
+.votive-name{font-family:'IBM Plex Mono',monospace;font-size:7px;letter-spacing:.08em;text-transform:uppercase;
+color:rgba(218,165,32,.35);transition:color .3s;white-space:nowrap;text-align:center}
+.votive:hover{opacity:.8}
+.votive:hover::after{background:rgba(218,165,32,.2)}
+.votive:hover .votive-icon{stroke:rgba(218,165,32,.85)}
+.votive:hover .votive-name{color:rgba(218,165,32,.6)}
+.votive.active{opacity:1}
+.votive.active::after{background:rgba(218,165,32,.4)}
+.votive.active .votive-icon{stroke:rgba(218,165,32,1);filter:drop-shadow(0 0 3px rgba(218,165,32,.3))}
+.votive.active .votive-name{color:rgba(218,165,32,.8);font-weight:400}
 @keyframes votivePulse{0%,100%{opacity:.9}50%{opacity:1}}
 #locus-label{position:absolute;bottom:1%;left:50%;transform:translateX(-50%);
 font-family:'Instrument Serif',serif;font-style:italic;font-size:.45rem;
@@ -363,13 +368,13 @@ flex-shrink:0;overflow:hidden;touch-action:none}
 /* ── Saint SVG: bigger for fat finger targeting ── */
 #body-svg{max-width:75%;margin:0 auto}
 
-/* ── Votives: side shelves shrink on mobile ── */
-.votive-shelf{width:44px;top:10%;bottom:5%}
-.votive{padding:4px 2px;min-width:44px;min-height:44px}
+/* ── Votives: horizontal tray at bottom ── */
+#votive-tray{padding:2px 4px 4px;gap:0}
+.votive{padding:3px 3px 4px;min-width:36px;min-height:36px}
 .votive:hover{transform:none}
 .votive.active{animation:none}
-.votive-icon{width:22px;height:22px}
-.votive-name{font-size:7px;letter-spacing:.01em}
+.votive-icon{width:16px;height:16px}
+.votive-name{font-size:6px;letter-spacing:.02em}
 #locus-label{position:static;transform:none;margin-top:.2em;font-size:.5rem}
 #idle-msg{font-size:.5rem}
 #body-title{font-size:.45rem}
@@ -1525,7 +1530,7 @@ flex-shrink:0;overflow:hidden;touch-action:none}
     <div id="body-title">Reliquary</div>
     <canvas id="visualizer"></canvas>
     <!-- ═══ VOTIVES — shelves in nave columns ═══ -->
-    <div class="votive-shelf votive-shelf-left">
+    <div id="votive-tray">
     <div class="votive" data-id="campana" title="Campana — bell tower">
       <svg class="votive-icon" viewBox="0 0 48 48">
         <path d="M14,34 Q14,18 24,14 Q34,18 34,34"/>
@@ -1597,7 +1602,7 @@ flex-shrink:0;overflow:hidden;touch-action:none}
       </svg>
       <span class="votive-name">Liber</span>
     </div>
-    </div><div class="votive-shelf votive-shelf-right">
+    <!-- right side votives -->
     <div class="votive" data-id="aqua" title="Aqua — holy water">
       <svg class="votive-icon" viewBox="0 0 48 48">
         <path d="M24,6 Q30,16 32,24 Q34,34 24,38 Q14,34 16,24 Q18,16 24,6"/>
@@ -1662,7 +1667,7 @@ flex-shrink:0;overflow:hidden;touch-action:none}
       </svg>
       <span class="votive-name">Lapis</span>
     </div>
-    </div><!-- /votive-shelf-right -->
+    </div><!-- /votive-tray -->
     <div id="locus-label"></div>
   </div>
   <div id="authenticum">
