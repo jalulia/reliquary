@@ -223,11 +223,13 @@ transition:opacity .8s ease;pointer-events:none}
 border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;
 transition:all .4s ease;pointer-events:all;background:transparent;cursor:crosshair}
 .slot::before{content:attr(data-label);position:absolute;bottom:-1.5em;
-font-size:.4rem;letter-spacing:.16em;text-transform:uppercase;
-color:rgba(255,255,255,.2);white-space:nowrap;transition:color .5s;pointer-events:none}
+font-size:.5rem;letter-spacing:.14em;text-transform:uppercase;
+color:rgba(255,255,255,.3);white-space:nowrap;transition:color .5s;pointer-events:none}
+.slot.empty{background:radial-gradient(circle,rgba(255,255,255,.04) 30%,transparent 70%);
+border:1px solid rgba(255,255,255,.06)}
 .slot .slot-icon{display:none}
-.slot .slot-name{position:absolute;bottom:-2.6em;font-size:.4rem;letter-spacing:.12em;
-text-transform:uppercase;color:rgba(255,255,255,.32);white-space:nowrap;text-align:center;
+.slot .slot-name{position:absolute;bottom:-2.6em;font-size:.5rem;letter-spacing:.12em;
+text-transform:uppercase;color:rgba(255,255,255,.42);white-space:nowrap;text-align:center;
 pointer-events:none;opacity:0;transition:opacity .4s}
 .slot .slot-relic-img{width:92%;height:92%;object-fit:contain;position:absolute;
 pointer-events:none;
@@ -286,20 +288,20 @@ transition:max-height .4s ease,border-radius .3s;border-radius:6px 0 0 0;cursor:
 display:flex;align-items:center;justify-content:center;font-size:1rem;transition:all .6s ease;cursor:default;opacity:.3}
 #wax-seal.ready{opacity:.8;cursor:pointer;border-color:var(--cinnabar);box-shadow:0 0 25px rgba(255,69,0,.15)}
 #wax-seal.stamped{opacity:1;background:var(--cinnabar);border-color:color-mix(in srgb,var(--completion-color) 60%,transparent);box-shadow:0 0 35px rgba(255,69,0,.3),0 0 12px color-mix(in srgb,var(--completion-color) 15%,transparent)}
-#seal-label{font-size:.42rem;letter-spacing:.18em;text-transform:uppercase;color:var(--w20)}
-#cert-text{font-family:'Instrument Serif',serif;font-style:italic;font-size:.55rem;color:var(--w20);text-align:center;line-height:1.6;padding:0 .4em}
+#seal-label{font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;color:var(--w30)}
+#cert-text{font-family:'Instrument Serif',serif;font-style:italic;font-size:.55rem;color:var(--w30);text-align:center;line-height:1.6;padding:0 .4em}
 /* Votive shelves — positioned in left and right nave columns */
-.votive-shelf{position:absolute;top:18%;bottom:10%;display:flex;flex-direction:column;
-justify-content:space-evenly;align-items:center;z-index:6;width:56px;padding:4px 0;pointer-events:all}
-.votive-shelf-left{left:6px}
-.votive-shelf-right{right:6px}
+.votive-shelf{position:absolute;top:14%;bottom:8%;display:flex;flex-direction:column;
+justify-content:space-evenly;align-items:center;z-index:6;width:68px;padding:4px 0;pointer-events:all}
+.votive-shelf-left{left:10px}
+.votive-shelf-right{right:10px}
 .votive{display:flex;flex-direction:column;align-items:center;gap:4px;
-cursor:pointer;padding:5px 3px;border:1px solid transparent;border-radius:4px;
-transition:all .3s ease;opacity:.55;min-width:48px}
-.votive-icon{width:26px;height:26px;fill:none;stroke:rgba(218,165,32,.65);stroke-width:1;
+cursor:pointer;padding:6px 4px;border:1px solid transparent;border-radius:4px;
+transition:all .3s ease;opacity:.7;min-width:56px}
+.votive-icon{width:32px;height:32px;fill:none;stroke:rgba(218,165,32,.7);stroke-width:1;
 stroke-linecap:round;stroke-linejoin:round;transition:all .3s ease}
-.votive-name{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.05em;text-transform:uppercase;
-color:rgba(218,165,32,.5);transition:color .3s;white-space:nowrap;text-align:center}
+.votive-name{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.05em;text-transform:uppercase;
+color:rgba(218,165,32,.6);transition:color .3s;white-space:nowrap;text-align:center}
 .votive:hover{opacity:.85;border-color:rgba(218,165,32,.15);background:rgba(218,165,32,.04)}
 .votive:hover .votive-icon{stroke:rgba(218,165,32,.9)}
 .votive:hover .votive-name{color:rgba(218,165,32,.7)}
@@ -333,7 +335,7 @@ flex-shrink:0;overflow:hidden;touch-action:none}
 #cat-header h2{font-size:.8rem}
 #carousel-wrap{padding:0}
 #carousel{gap:.2em;padding:.3em .4em}
-.saint-chip{padding:.25em .5em;font-size:.55rem;min-height:32px}
+.saint-chip{padding:.35em .6em;font-size:.55rem;min-height:44px}
 .saint-chip .saint-icon{width:14px;height:14px}
 #saint-info{padding:.2em .6em;min-height:1.6em}
 #saint-name{font-size:.9rem}
@@ -351,8 +353,8 @@ flex-shrink:0;overflow:hidden;touch-action:none}
 .reliquary-border svg{height:100%}
 
 /* ── Slots: touch-friendly size ── */
-.slot{width:42px;height:42px}
-.slot-label{font-size:.26rem}
+.slot{width:48px;height:48px}
+.slot-label{font-size:.4rem}
 .slot-relic-img{width:92%;height:92%}
 
 /* ── Drag ghost: smaller on mobile ── */
@@ -362,12 +364,12 @@ flex-shrink:0;overflow:hidden;touch-action:none}
 #body-svg{max-width:75%;margin:0 auto}
 
 /* ── Votives: side shelves shrink on mobile ── */
-.votive-shelf{width:34px;top:12%;bottom:6%}
-.votive{padding:2px 1px}
+.votive-shelf{width:44px;top:10%;bottom:5%}
+.votive{padding:4px 2px;min-width:44px;min-height:44px}
 .votive:hover{transform:none}
 .votive.active{animation:none}
-.votive-icon{width:16px;height:16px}
-.votive-name{font-size:6px;letter-spacing:.01em}
+.votive-icon{width:22px;height:22px}
+.votive-name{font-size:7px;letter-spacing:.01em}
 #locus-label{position:static;transform:none;margin-top:.2em;font-size:.5rem}
 #idle-msg{font-size:.5rem}
 #body-title{font-size:.45rem}
@@ -2039,9 +2041,10 @@ function tick(){
   }catch(e){console.error('tick error:',e.message);}
   timerID=setTimeout(tick,TICK_MS);
 }
-// Watchdog: restart sequencer if it dies while voices exist
+// Watchdog: restart sequencer if it dies while voices exist (but not during locus sanctus fade)
+let _locusActive=false;
 setInterval(()=>{
-  if(Object.keys(VOICES).length>0&&!timerID){
+  if(Object.keys(VOICES).length>0&&!timerID&&!_locusActive){
     console.warn('Sequencer watchdog: restarting');
     startSequencer();
   }
@@ -2764,24 +2767,27 @@ function synthJoseph(c,v,t,dur,hz,vel,acc,slide,step){
       bp.frequency.value=[600,1000,2200][i];bp.Q.value=[4,3,2.5][i];
       const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=n*3;lp.Q.value=0.5;
       const e=c.createGain();e.gain.setValueAtTime(0,t);
-      e.gain.linearRampToValueAtTime(vel*0.09,t+0.2);
-      e.gain.setTargetAtTime(vel*0.05,t+0.2,dur*1.2);
+      e.gain.linearRampToValueAtTime(vel*0.22,t+0.2);
+      e.gain.setTargetAtTime(vel*0.14,t+0.2,dur*1.2);
       e.gain.exponentialRampToValueAtTime(0.001,t+dur*3.5);
       s1.connect(bp);s2.connect(bp);bp.connect(lp);lp.connect(e);e.connect(o);
       s1.start(t);s2.start(t);lfo.start(t);
       s1.stop(t+dur*3.6);s2.stop(t+dur*3.6);lfo.stop(t+dur*3.6);
     });
   }else if(rid==='arp'){
-    // Scala — stairway dissolving: pitch bends upward mid-note, like gravity failing
-    const s=c.createOscillator();s.type='triangle';s.frequency.value=hz;
-    // Pitch floats upward — the step lifts off
-    s.frequency.exponentialRampToValueAtTime(hz*1.06,t+dur*0.6);// quarter-tone rise
-    const s2=c.createOscillator();s2.type='sine';s2.frequency.value=hz*2;
-    s2.frequency.exponentialRampToValueAtTime(hz*2.12,t+dur*0.6);
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*5;lp.Q.value=2;
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.22,t+0.004);
+    // Scala — stairway dissolving: detuned saws through allpass phaser, pitch floats up
+    const s=c.createOscillator();s.type='sawtooth';s.frequency.value=hz;s.detune.value=-6;
+    s.frequency.exponentialRampToValueAtTime(hz*1.06,t+dur*0.6);
+    const s2=c.createOscillator();s2.type='sawtooth';s2.frequency.value=hz;s2.detune.value=6;
+    s2.frequency.exponentialRampToValueAtTime(hz*1.06,t+dur*0.6);
+    // Allpass phaser — ethereal shimmer on the ascending note
+    const ap1=c.createBiquadFilter();ap1.type='allpass';ap1.frequency.value=hz*3;
+    const ap2=c.createBiquadFilter();ap2.type='allpass';ap2.frequency.value=hz*5;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*6;lp.Q.value=3;
+    lp.frequency.exponentialRampToValueAtTime(hz*2,t+dur*0.8);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.25,t+0.004);
     e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.1);
-    s.connect(lp);s2.connect(lp);lp.connect(e);e.connect(o);
+    s.connect(ap1);s2.connect(ap1);ap1.connect(ap2);ap2.connect(lp);lp.connect(e);e.connect(o);
     s.start(t);s2.start(t);s.stop(t+dur*1.2);s2.stop(t+dur*1.2);
   }else if(rid==='shimmer'){
     // Ocvlvs — eyes rolled back: detuned saws through allpass chain, phased and drifting
@@ -2794,7 +2800,7 @@ function synthJoseph(c,v,t,dur,hz,vel,acc,slide,step){
     const pg=c.createGain();pg.gain.value=400;
     phaseLFO.connect(pg);pg.connect(ap1.frequency);pg.connect(ap2.frequency);
     const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*3;lp.Q.value=1;
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.1,t+0.08);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.2,t+0.08);
     e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
     s1.connect(ap1);s2.connect(ap1);ap1.connect(ap2);ap2.connect(lp);lp.connect(e);e.connect(o);
     s1.start(t);s2.start(t);phaseLFO.start(t);
@@ -2843,8 +2849,8 @@ function synthJoseph(c,v,t,dur,hz,vel,acc,slide,step){
     thud.connect(ws);ws.connect(e);e.connect(o);thud.start(t);thud.stop(t+0.15);
     // Ghost resonance — the floor remembering the foot
     const ghost=c.createOscillator();ghost.type='triangle';ghost.frequency.value=hz*1.5;
-    const ge=c.createGain();ge.gain.setValueAtTime(0,t+0.02);ge.gain.linearRampToValueAtTime(vel*0.06,t+0.06);
-    ge.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+    const ge=c.createGain();ge.gain.setValueAtTime(0,t+0.02);ge.gain.linearRampToValueAtTime(vel*0.16,t+0.06);
+    ge.gain.exponentialRampToValueAtTime(0.001,t+0.25);
     ghost.connect(ge);ge.connect(o);ghost.start(t);ghost.stop(t+0.25);
   }else{
     // Fallback — reverse swell sine (backwards bell, uncanny)
@@ -3611,7 +3617,7 @@ function synthCalix(ctx,out){
   // Higher partials decay faster (physically accurate). No noise "water" component —
   // replaced with a low sine resonance that blooms after the bell strike (sympathetic ring)
   let alive=true;
-  const hz=220; // A3, minor bell
+  const hz=getActiveSaintFreq(220); // follows active saint key, falls back to A3
   const partials=[ // [ratio, amplitude, decayMultiplier]
     [0.5,  0.10, 0.5],  // hum tone
     [1.0,  0.30, 1.0],  // prime/strike
@@ -3725,7 +3731,8 @@ function synthLapis(ctx,out){
   // with occasional rubato footstep pairs — synthesized impacts, not noise bursts
   // Organ pedal: stacked harmonics instead of single sine
   // Single 80Hz sub-bass room bloom — below any saint's root, felt not heard
-  const roomSine=ctx.createOscillator();roomSine.type='sine';roomSine.frequency.value=80;
+  const lapHz=Math.max(getActiveSaintFreq(160)*0.25,40);// sub-octave of saint root, clamped 40-100Hz
+  const roomSine=ctx.createOscillator();roomSine.type='sine';roomSine.frequency.value=lapHz;
   const roomLP=ctx.createBiquadFilter();roomLP.type='lowpass';roomLP.frequency.value=120;roomLP.Q.value=0.5;
   const roomGain=ctx.createGain();roomGain.gain.value=0.05;
   const organG=ctx.createGain();organG.gain.value=0;
@@ -3840,7 +3847,7 @@ function synthCampana(ctx,out,gainMult){
   // Tower bell: proper additive synthesis with inharmonic partials,
   // distance-simulated LP sweep (transient bright → sustained warm),
   // very long decay (10s). Sparse triggering: 40–90s intervals.
-  const t=ctx.currentTime,hz=130.8,gm=gainMult||1;
+  const t=ctx.currentTime,hz=getActiveSaintFreq(130.8)*0.5,gm=gainMult||1;// half the saint's root for deep bell
   const partials=[ // [ratio, amplitude, decayRate] — higher partials decay faster
     [0.5,  0.08, 0.45], // hum tone (2 octaves below nominal)
     [1.0,  0.28, 1.0],  // prime/strike tone
@@ -3865,6 +3872,19 @@ function synthCampana(ctx,out,gainMult){
   function scheduleBell(){bellTimer=setTimeout(()=>{if(alive){synthCampana(ctx,out,gm);scheduleBell();}},25000+Math.random()*35000);}
   scheduleBell();
   return{stop(){alive=false;clearTimeout(bellTimer);}};
+}
+
+// ══════ KEY-AWARE VOTIVE HELPER ══════
+// Returns the root frequency of the most-placed saint, or fallback
+function getActiveSaintFreq(fallback){
+  const counts={};
+  Object.values(VOICES).forEach(v=>{
+    if(v&&v.saint)counts[v.saint.id]=(counts[v.saint.id]||0)+1;
+  });
+  let best=null,bestCount=0;
+  Object.entries(counts).forEach(([id,n])=>{if(n>bestCount){bestCount=n;best=id;}});
+  if(best){const s=SAINTS.find(s=>s.id===best);if(s)return s.freq;}
+  return fallback;
 }
 
 // ══════ VOTIVE STATE ══════
@@ -3904,6 +3924,7 @@ function checkAllVotives(){
 let locusFadeTimer=null;
 function triggerLocusSanctus(){
   if(!AC.ctx)return;
+  _locusActive=true;
   const t=AC.ctx.currentTime;
   const lbl=document.getElementById('locus-label');
   if(lbl){lbl.textContent='Locus sanctus confirmatur';lbl.classList.add('revealed');}
@@ -3993,7 +4014,12 @@ function playRelicPreview(relic,saint){
   synthFn(c,tempVoice,t,dur,hz,0.7,false,false,0);
   // Fade out the gain node after 2 seconds to clean up
   vg.gain.setTargetAtTime(0,t+1.5,0.3);
-  setTimeout(()=>{try{vg.disconnect();}catch(e){}},3000);
+  setTimeout(()=>{
+    try{vg.disconnect();}catch(e){}
+    // Clean up persistent synth state (acid osc, screw LFO)
+    if(tempVoice._acidOsc)try{tempVoice._acidOsc.stop();}catch(e){}
+    if(tempVoice.output&&tempVoice.output._screwLfo)try{tempVoice.output._screwLfo.stop();}catch(e){}
+  },3000);
 }
 
 // ══════ COMPLETION ══════
