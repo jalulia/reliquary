@@ -285,19 +285,19 @@ display:flex;align-items:center;justify-content:center;font-size:1rem;transition
 #votive-tray{display:flex;justify-content:space-evenly;align-items:flex-end;
 width:100%;padding:0.3em 1em;gap:0;position:absolute;bottom:0;left:0;z-index:5;
 background:linear-gradient(to top,rgba(10,10,10,.9) 0%,transparent 100%)}
-.votive{display:flex;flex-direction:column;align-items:center;gap:.1em;
-cursor:pointer;padding:.25em .15em;border:none;
+.votive{display:flex;flex-direction:column;align-items:center;gap:.15em;
+cursor:pointer;padding:.3em .2em;border:none;
 transition:all .4s ease;opacity:.35;flex:1;max-width:56px}
-.votive-icon{width:32px;height:32px;fill:none;stroke:rgba(218,165,32,.45);stroke-width:.8;
+.votive-icon{width:32px;height:32px;fill:none;stroke:rgba(218,165,32,.65);stroke-width:1;
 stroke-linecap:round;stroke-linejoin:round;transition:all .4s ease}
-.votive-name{font-size:.18rem;letter-spacing:.12em;text-transform:uppercase;
-color:rgba(218,165,32,.25);transition:color .4s;white-space:nowrap}
-.votive:hover{opacity:.6}
-.votive:hover .votive-icon{stroke:rgba(218,165,32,.7)}
-.votive:hover .votive-name{color:rgba(218,165,32,.5)}
+.votive-name{font-size:.22rem;letter-spacing:.1em;text-transform:uppercase;
+color:rgba(218,165,32,.45);transition:color .4s;white-space:nowrap}
+.votive:hover{opacity:.75}
+.votive:hover .votive-icon{stroke:rgba(218,165,32,.85)}
+.votive:hover .votive-name{color:rgba(218,165,32,.7)}
 .votive.active{opacity:1}
-.votive.active .votive-icon{stroke:rgba(218,165,32,.95);filter:drop-shadow(0 0 5px rgba(218,165,32,.4))}
-.votive.active .votive-name{color:rgba(218,165,32,.75)}
+.votive.active .votive-icon{stroke:rgba(218,165,32,1);filter:drop-shadow(0 0 6px rgba(218,165,32,.5))}
+.votive.active .votive-name{color:rgba(218,165,32,.9)}
 @keyframes votivePulse{0%,100%{opacity:.9}50%{opacity:1}}
 #locus-label{position:absolute;bottom:1%;left:50%;transform:translateX(-50%);
 font-family:'Instrument Serif',serif;font-style:italic;font-size:.45rem;
@@ -357,9 +357,9 @@ flex-shrink:0;overflow:hidden;touch-action:none}
 .votive{position:static;transform:none;display:inline-flex;padding:.15em}
 .votive:hover{transform:scale(1.05)}
 .votive.active{animation:none}
-.votive-icon{width:18px;height:18px}
-.votive-name{font-size:.15rem}
-#votive-tray{padding:0 .3em;gap:0}
+.votive-icon{width:22px;height:22px}
+.votive-name{font-size:.18rem}
+#votive-tray{padding:.15em .3em;gap:.1em}
 #locus-label{position:static;transform:none;margin-top:.2em;font-size:.5rem}
 #idle-msg{font-size:.5rem}
 #body-title{font-size:.45rem}
@@ -3542,7 +3542,7 @@ function synthIncensum(ctx,out){
   }
   clink();
   return{stop(){alive=false;try{ns.stop();slfo.stop();panLFO.stop();smokeDrift.stop();}catch(e){}},
-    scaleUp(f,t,d){sg.gain.setTargetAtTime(0.02*f,t,d*0.3);}};
+    scaleUp(f,t,d){sg.gain.setTargetAtTime(0.035*f,t,d*0.3);}};
 }
 
 function synthCereus(ctx,out){
@@ -3566,10 +3566,10 @@ function synthCereus(ctx,out){
     o.frequency.setValueAtTime(700+Math.random()*200,t);
     o.frequency.exponentialRampToValueAtTime(180+Math.random()*40,t+0.12);
     const e=ctx.createGain();
-    e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(0.025,t+0.002);
+    e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(0.04,t+0.002);
     e.gain.exponentialRampToValueAtTime(0.0001,t+0.16);
     o.connect(e);e.connect(out);o.start(t);o.stop(t+0.2);
-    setTimeout(drip,12000+Math.random()*18000);
+    setTimeout(drip,6000+Math.random()*10000);// more frequent drips
   }
   // Wick crackle: very brief sine impulse at high freq, shaped like a pop — not a noise burst
   function crackle(){
@@ -3579,10 +3579,10 @@ function synthCereus(ctx,out){
     const o=ctx.createOscillator();o.type='sine';o.frequency.value=hz;
     o.frequency.exponentialRampToValueAtTime(hz*0.3,t+0.05);
     const e=ctx.createGain();
-    e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(0.02,t+0.0005);
+    e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(0.035,t+0.0005);
     e.gain.exponentialRampToValueAtTime(0.0001,t+0.06);
     o.connect(e);e.connect(out);o.start(t);o.stop(t+0.08);
-    setTimeout(crackle,25000+Math.random()*25000);
+    setTimeout(crackle,10000+Math.random()*15000);// more frequent crackles
   }
   drip();crackle();
   return{stop(){alive=false;try{ns.stop();flfo.stop();}catch(e){}},
@@ -3630,41 +3630,44 @@ function synthCalix(ctx,out){
     se.gain.exponentialRampToValueAtTime(0.0001,t+8);
     sr.connect(se);se.connect(out);sr.start(t);sr.stop(t+8.5);
   }
-  bell(0.035);
+  bell(0.08);// initial ring — clear and present
   let bellTimer;
-  function scheduleBell(){bellTimer=setTimeout(()=>{if(alive){bell(0.035);scheduleBell();}},55000+Math.random()*35000);}
+  function scheduleBell(){bellTimer=setTimeout(()=>{if(alive){bell(0.06);scheduleBell();}},18000+Math.random()*22000);}// 18-40s intervals
   scheduleBell();
   return{stop(){alive=false;clearTimeout(bellTimer);}};
 }
 
 function synthLilium(ctx,out){
-  // Lily breath — near-subliminal high-frequency air shimmer
-  // Adds "air" to the top of the spectrum without clashing with any saint key
-  // Breathy texture: pink noise through resonant high bandpass
+  // Lily breath — warm gentle air, felt more than heard
+  // Soft pink noise through LOW bandpass (warm, not shrill) + gentle beating sines
+  // in the mid-high range (1200-1800Hz) — warm shimmer, not piercing
   const ns=ctx.createBufferSource();ns.buffer=getPinkNoise(ctx);ns.loop=true;
-  const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=4200;bp.Q.value=4;
+  const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1400;bp.Q.value=1.2;// warm, not resonant
+  const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2800;lp.Q.value=0.3;// cut everything harsh
   // Breath rhythm: very slow amplitude modulation
-  const breathLFO=ctx.createOscillator();breathLFO.type='sine';breathLFO.frequency.value=0.15;
-  const breathG=ctx.createGain();breathG.gain.value=0.008;
+  const breathLFO=ctx.createOscillator();breathLFO.type='sine';breathLFO.frequency.value=0.12;
+  const breathG=ctx.createGain();breathG.gain.value=0.006;
   breathLFO.connect(breathG);
-  const ng=ctx.createGain();ng.gain.value=0.022;
+  const ng=ctx.createGain();ng.gain.value=0.018;
   breathG.connect(ng.gain);
-  ns.connect(bp);bp.connect(ng);ng.connect(out);ns.start();breathLFO.start();
-  // High shimmer: two barely-audible sines creating interference beating
-  // Well above any saint's harmonic range — purely atmospheric
-  const sh1=ctx.createOscillator();sh1.type='sine';sh1.frequency.value=5200;
-  const sh2=ctx.createOscillator();sh2.type='sine';sh2.frequency.value=5810;// ~10Hz beating with sh1's 5th harmonic
-  // Slow pitch drift on one — the shimmer breathes
-  const drift=ctx.createOscillator();drift.type='sine';drift.frequency.value=0.04;
-  const dg=ctx.createGain();dg.gain.value=15;// ±15Hz drift
+  ns.connect(bp);bp.connect(lp);lp.connect(ng);ng.connect(out);ns.start();breathLFO.start();
+  // Gentle shimmer: two sines at 1200 and 1803Hz — warm beating (3Hz)
+  // These are high enough to shimmer but low enough to be pleasant, not piercing
+  const sh1=ctx.createOscillator();sh1.type='sine';sh1.frequency.value=1200;
+  const sh2=ctx.createOscillator();sh2.type='sine';sh2.frequency.value=1803;// 3Hz beating
+  // Slow drift
+  const drift=ctx.createOscillator();drift.type='sine';drift.frequency.value=0.03;
+  const dg=ctx.createGain();dg.gain.value=5;// ±5Hz gentle drift
   drift.connect(dg);dg.connect(sh2.frequency);
-  const sg1=ctx.createGain();sg1.gain.value=0.009;
-  const sg2=ctx.createGain();sg2.gain.value=0.009;
-  sh1.connect(sg1);sg1.connect(out);
-  sh2.connect(sg2);sg2.connect(out);
+  const sg1=ctx.createGain();sg1.gain.value=0.006;
+  const sg2=ctx.createGain();sg2.gain.value=0.006;
+  // LP on the sines too — round everything off
+  const shLP=ctx.createBiquadFilter();shLP.type='lowpass';shLP.frequency.value=2200;shLP.Q.value=0.3;
+  sh1.connect(shLP);sh2.connect(shLP);shLP.connect(sg1);
+  sg1.connect(out);
   sh1.start();sh2.start();drift.start();
   return{stop(){try{ns.stop();breathLFO.stop();sh1.stop();sh2.stop();drift.stop();}catch(e){}},
-    scaleUp(f,t,d){ng.gain.setTargetAtTime(0.022*f,t,d*0.3);sg1.gain.setTargetAtTime(0.009*f,t,d*0.3);sg2.gain.setTargetAtTime(0.009*f,t,d*0.3);}};
+    scaleUp(f,t,d){ng.gain.setTargetAtTime(0.018*f,t,d*0.3);sg1.gain.setTargetAtTime(0.006*f,t,d*0.3);}};
 }
 
 function synthLiber(ctx,out){
@@ -3859,12 +3862,12 @@ function synthCampana(ctx,out,gainMult){
     lp.frequency.setValueAtTime(500,t);lp.frequency.exponentialRampToValueAtTime(3000,t+3);
     const e=ctx.createGain();
     e.gain.setValueAtTime(0,t);
-    e.gain.linearRampToValueAtTime(gm*0.04*amp,t+0.008);
+    e.gain.linearRampToValueAtTime(gm*0.09*amp,t+0.008);// louder (was 0.04)
     e.gain.exponentialRampToValueAtTime(0.0001,t+10/dk);
     o.connect(lp);lp.connect(e);e.connect(out);o.start(t);o.stop(t+10/dk+0.3);
   });
   let alive=true,bellTimer;
-  function scheduleBell(){bellTimer=setTimeout(()=>{if(alive){synthCampana(ctx,out,gm);scheduleBell();}},40000+Math.random()*50000);}
+  function scheduleBell(){bellTimer=setTimeout(()=>{if(alive){synthCampana(ctx,out,gm);scheduleBell();}},22000+Math.random()*28000);}// 22-50s (was 40-90)
   scheduleBell();
   return{stop(){alive=false;clearTimeout(bellTimer);}};
 }
