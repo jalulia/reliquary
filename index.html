@@ -3271,7 +3271,7 @@ function synthPaprika(c,v,t,dur,hz,vel,acc,slide,step){
 }
 
 function synthRobin(c,v,t,dur,hz,vel,acc,slide,step){
-  const o=v.gain;
+  const o=_out(v);
   const role=v.relic.role;
   if(role==='whistle'){
     // Breathy sine melody with vibrato and octave harmonic
@@ -3302,9 +3302,7 @@ function synthRobin(c,v,t,dur,hz,vel,acc,slide,step){
     env.gain.exponentialRampToValueAtTime(0.001,t+0.15);
     osc.connect(env);env.connect(o);osc.start(t);osc.stop(t+0.2);
     // Noise layer
-    const buf=c.createBuffer(1,c.sampleRate*0.05,c.sampleRate);
-    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
-    const ns=c.createBufferSource();ns.buffer=buf;
+    const ns=c.createBufferSource();ns.buffer=getWhiteNoise(c);
     const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=300;
     const ng=c.createGain();ng.gain.setValueAtTime(vel*0.2,t);
     ng.gain.exponentialRampToValueAtTime(0.001,t+0.025);
@@ -3312,9 +3310,7 @@ function synthRobin(c,v,t,dur,hz,vel,acc,slide,step){
   }else if(role==='clap'){
     // Three staggered noise bursts for multiple-hands clap
     for(let i=0;i<3;i++){
-      const buf=c.createBuffer(1,c.sampleRate*0.04,c.sampleRate);
-      const d=buf.getChannelData(0);for(let j=0;j<d.length;j++)d[j]=Math.random()*2-1;
-      const ns=c.createBufferSource();ns.buffer=buf;
+      const ns=c.createBufferSource();ns.buffer=getWhiteNoise(c);
       const bp=c.createBiquadFilter();bp.type='bandpass';
       bp.frequency.value=1000+Math.random()*2000;bp.Q.value=2;
       const eg=c.createGain();eg.gain.setValueAtTime(0,t+i*0.004);
@@ -3329,9 +3325,7 @@ function synthRobin(c,v,t,dur,hz,vel,acc,slide,step){
     bs.connect(bg);bg.connect(o);bs.start(t);bs.stop(t+0.04);
   }else if(role==='snap'){
     // High bandpass noise — ultra-short
-    const buf=c.createBuffer(1,c.sampleRate*0.02,c.sampleRate);
-    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
-    const ns=c.createBufferSource();ns.buffer=buf;
+    const ns=c.createBufferSource();ns.buffer=getWhiteNoise(c);
     const bp=c.createBiquadFilter();bp.type='bandpass';
     bp.frequency.value=3500+Math.random()*1500;bp.Q.value=3;
     const eg=c.createGain();eg.gain.setValueAtTime(vel*0.25,t);
@@ -4223,7 +4217,9 @@ const SAINT_ICONS=[
   // Symeon — pillar
   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="6" y="5" width="4" height="9" rx=".5"/><path d="M5,5 L11,5"/><path d="M5,14 L11,14"/><circle cx="8" cy="3" r="2"/></svg>',
   // Paprika — butterfly/dream
-  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M8,3 L8,13"/><path d="M8,5 Q3,2 2,6 Q1,10 6,9 Q8,8 8,5"/><path d="M8,5 Q13,2 14,6 Q15,10 10,9 Q8,8 8,5"/><circle cx="8" cy="3" r="1" fill="currentColor"/></svg>'
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M8,3 L8,13"/><path d="M8,5 Q3,2 2,6 Q1,10 6,9 Q8,8 8,5"/><path d="M8,5 Q13,2 14,6 Q15,10 10,9 Q8,8 8,5"/><circle cx="8" cy="3" r="1" fill="currentColor"/></svg>',
+  // Robin — bow and arrow
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4,2 Q2,8 4,14"/><line x1="4" y1="2" x2="4" y2="14"/><line x1="4" y1="8" x2="14" y2="8"/><path d="M12,6 L14,8 L12,10"/></svg>'
 ];
 // ══════ UI: SAINT ACCORDION ══════
 // ══════ SAINT SILHOUETTES — per-saint SVGs for body-mapped relic layout ══════
