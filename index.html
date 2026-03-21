@@ -234,7 +234,14 @@ pointer-events:none;
 filter:brightness(1.1) contrast(1.05);
 transition:opacity .5s ease,filter .3s ease;opacity:0;top:3px}
 /* Filled: image floats directly on body, no container */
-.slot.filled{background:transparent;cursor:grab}
+.slot.filled{background:transparent;cursor:default}
+.relic-handle{position:absolute;transform:translate(-50%,-50%);width:90px;height:90px;
+cursor:grab;z-index:5;pointer-events:all;display:flex;flex-direction:column;align-items:center;
+justify-content:center;border-radius:50%;touch-action:none}
+.relic-handle:active{cursor:grabbing}
+.relic-handle-img{width:80px;height:80px;object-fit:contain;pointer-events:none;
+filter:brightness(1.1) contrast(1.05);animation:relicFloat 4s ease-in-out infinite}
+.slot-home{width:70%;height:70%;border:1px dashed rgba(255,255,255,.15);border-radius:50%}
 .slot.removing .slot-relic-img{opacity:0 !important;transform:scale(0.7);transition:all .3s ease !important;animation:none !important}
 .slot.removing .slot-name{opacity:0 !important;transition:opacity .3s ease !important}
 .slot.filled .slot-relic-img{opacity:1;animation:relicFloat 4s ease-in-out infinite}
@@ -282,7 +289,6 @@ display:flex;align-items:center;justify-content:center;font-size:1rem;transition
 #seal-label{font-size:.42rem;letter-spacing:.18em;text-transform:uppercase;color:var(--w20)}
 #cert-text{font-family:'Instrument Serif',serif;font-style:italic;font-size:.55rem;color:var(--w20);text-align:center;line-height:1.6;padding:0 .4em}
 /* Votive shelves — positioned in left and right nave columns */
-#votive-tray{display:contents}
 .votive-shelf{position:absolute;top:18%;bottom:10%;display:flex;flex-direction:column;
 justify-content:space-evenly;align-items:center;z-index:6;width:56px;padding:4px 0;pointer-events:all}
 .votive-shelf-left{left:6px}
@@ -1516,8 +1522,8 @@ flex-shrink:0;overflow:hidden;touch-action:none}
     <div id="idle-msg"></div>
     <div id="body-title">Reliquary</div>
     <canvas id="visualizer"></canvas>
-    <!-- ═══ VOTIVES — structured tray at base of reliquary ═══ -->
-    <div id="votive-tray"><div class="votive-shelf votive-shelf-left">
+    <!-- ═══ VOTIVES — shelves in nave columns ═══ -->
+    <div class="votive-shelf votive-shelf-left">
     <div class="votive" data-id="campana" title="Campana — bell tower">
       <svg class="votive-icon" viewBox="0 0 48 48">
         <path d="M14,34 Q14,18 24,14 Q34,18 34,34"/>
@@ -1654,7 +1660,7 @@ flex-shrink:0;overflow:hidden;touch-action:none}
       </svg>
       <span class="votive-name">Lapis</span>
     </div>
-    </div></div><!-- /votive-tray -->
+    </div><!-- /votive-shelf-right -->
     <div id="locus-label"></div>
   </div>
   <div id="authenticum">
@@ -4086,6 +4092,70 @@ function updateAccordionPlacedState(){
   });
 }
 
+// ══════ PROXIMITY DRAG — placed relics as spatial volume controls ══════
+const PROX_RADIUS=200;
+function proximityGain(dx,dy){
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  if(dist<=0)return 0.7;
+  if(dist>=PROX_RADIUS)return 0.05;
+  return 0.05+0.65*Math.cos(dist/PROX_RADIUS*Math.PI*0.5);
+}
+let proxDrag=null;
+function startProximityDrag(ev,idx){
+  ev.preventDefault();ev.stopPropagation();
+  const handle=ev.currentTarget;
+  const homeSlot=document.querySelector('.slot[data-index="'+idx+'"]');
+  if(!homeSlot)return;
+  const hr=homeSlot.getBoundingClientRect();
+  proxDrag={idx,homeX:hr.left+hr.width/2,homeY:hr.top+hr.height/2,moved:false,startX:ev.clientX,startY:ev.clientY,handle};
+  if(ev.target.setPointerCapture)try{ev.target.setPointerCapture(ev.pointerId);}catch(e){}
+  document.addEventListener('pointermove',onProxMove);
+  document.addEventListener('pointerup',onProxEnd);
+}
+function onProxMove(ev){
+  if(!proxDrag)return;ev.preventDefault();
+  const dx=ev.clientX-proxDrag.startX,dy=ev.clientY-proxDrag.startY;
+  if(dx*dx+dy*dy>36)proxDrag.moved=true;
+  if(!proxDrag.moved)return;
+  const s=slots[proxDrag.idx];if(!s)return;
+  const container=document.getElementById('slot-grid');
+  const cr=container.getBoundingClientRect();
+  const pctX=((ev.clientX-cr.left)/cr.width)*100;
+  const pctY=((ev.clientY-cr.top)/cr.height)*100;
+  proxDrag.handle.style.left=pctX+'%';
+  proxDrag.handle.style.top=pctY+'%';
+  const hdx=ev.clientX-proxDrag.homeX,hdy=ev.clientY-proxDrag.homeY;
+  const gain=proximityGain(hdx,hdy);
+  const dist=Math.sqrt(hdx*hdx+hdy*hdy);
+  const scale=1.0-Math.min(dist/PROX_RADIUS,1)*0.12;
+  proxDrag.handle.style.transform='translate(-50%,-50%) scale('+scale+')';
+  if(s.voice&&s.voice.output){
+    s.voice.output.gain.cancelScheduledValues(AC.ctx.currentTime);
+    s.voice.output.gain.setTargetAtTime(gain,AC.ctx.currentTime,0.06);
+  }
+}
+function onProxEnd(ev){
+  if(!proxDrag)return;
+  document.removeEventListener('pointermove',onProxMove);
+  document.removeEventListener('pointerup',onProxEnd);
+  if(ev.target.releasePointerCapture)try{ev.target.releasePointerCapture(ev.pointerId);}catch(e){}
+  if(!proxDrag.moved){
+    const idx=proxDrag.idx;proxDrag=null;
+    const sl=document.querySelector('.slot[data-index="'+idx+'"]');
+    if(sl){sl.classList.add('removing');setTimeout(()=>{removeFromSlot(idx);},300);}
+    return;
+  }
+  const s=slots[proxDrag.idx];
+  if(s){
+    const container=document.getElementById('slot-grid');
+    const cr=container.getBoundingClientRect();
+    const p=SLOT_POS[proxDrag.idx];
+    s.offX=((ev.clientX-cr.left)/cr.width)*100-p.x;
+    s.offY=((ev.clientY-cr.top)/cr.height)*100-p.y;
+  }
+  proxDrag=null;resetIdleTimer();
+}
+
 // ══════ UI: SLOTS ══════
 function renderSlots(){
   const container=document.getElementById('slot-grid');container.innerHTML='';
@@ -4097,13 +4167,30 @@ function renderSlots(){
     sl.style.left=p.x+'%';sl.style.top=p.y+'%';
     if(slots[i]){
       sl.style.setProperty('--slot-color',slots[i].saint.color);
+      // Home marker — dashed ring at slot position, accepts catalogue drops
+      sl.innerHTML='<span class="slot-home" style="border-color:'+slots[i].saint.color+'"></span>';
+      sl.addEventListener('click',()=>{
+        if(pendingRelic){
+          if(!AC.ctx){initAudio();startSequencer();}
+          removeFromSlot(i,true);
+          placeRelic(i,pendingRelic.relic,pendingRelic.saint);
+          pendingRelic=null;
+          document.querySelectorAll('.cabinet-niche.tap-selected').forEach(n=>n.classList.remove('tap-selected'));
+          document.querySelectorAll('.slot.tap-ready').forEach(s2=>s2.classList.remove('tap-ready'));
+        }
+      });
+      // Relic handle — draggable, at slot + offset
+      const handle=document.createElement('div');handle.className='relic-handle';
+      const hx=p.x+(slots[i].offX||0),hy=p.y+(slots[i].offY||0);
+      handle.style.left=hx+'%';handle.style.top=hy+'%';
+      handle.style.setProperty('--slot-color',slots[i].saint.color);
       const si=SAINTS.indexOf(slots[i].saint);const ri2=slots[i].saint.relics.indexOf(slots[i].relic);
       const slotImg='assets/'+RELIC_IMGS[(si*9+ri2)%RELIC_IMGS.length];
-      sl.innerHTML='<img class="slot-relic-img" src="'+slotImg+'" alt=""><span class="slot-name" style="color:'+slots[i].saint.color+'">'+slots[i].relic.name+'</span>';
-      sl.addEventListener('pointerdown',e=>{if(!dragging)startSlotDrag(e,i);});
+      handle.innerHTML='<img class="relic-handle-img" src="'+slotImg+'" alt="" draggable="false"><span class="slot-name" style="color:'+slots[i].saint.color+'">'+slots[i].relic.name+'</span>';
+      handle.addEventListener('pointerdown',e=>startProximityDrag(e,i));
+      container.appendChild(handle);
     }else{
       sl.innerHTML='<span class="slot-icon">'+p.label+'</span>';
-      // Tap-to-place: tap an empty slot to place the pending relic
       sl.addEventListener('click',()=>{
         if(pendingRelic){
           if(!AC.ctx){initAudio();startSequencer();}
@@ -4282,7 +4369,7 @@ function onDragEnd(ev){
 function placeRelic(idx,relic,saint,silent){
   if(!AC.ctx)initAudio();if(!timerID)startSequencer();
   const voice=buildVoice(relic,saint,AC.master);
-  slots[idx]={relic,saint,voice};VOICES[idx]=voice;updateDensity();
+  slots[idx]={relic,saint,voice,offX:0,offY:0};VOICES[idx]=voice;updateDensity();
   startConvergenceDetector();// ensure breathing system is running
   if(!silent){renderSlots();renderRelicGrid();renderAuth();}
   setTimeout(()=>{const sl=document.querySelector('.slot[data-index="'+idx+'"]');if(sl){sl.classList.add('burst');setTimeout(()=>sl.classList.remove('burst'),500);}},50);
