@@ -86,8 +86,8 @@ background:var(--saint-color);opacity:0;transition:opacity .3s;pointer-events:no
 .saint-chip .saint-icon{width:13px;height:13px;flex-shrink:0;opacity:.35;
 transition:opacity .3s,filter .3s;position:relative;z-index:1}
 .saint-chip .saint-icon svg{width:100%;height:100%}
-.saint-chip .sname{font-size:.42rem;letter-spacing:.1em;text-transform:uppercase;
-color:var(--w30);transition:color .3s;position:relative;z-index:1;font-weight:400}
+.saint-chip .sname{font-size:.52rem;letter-spacing:.08em;text-transform:uppercase;
+color:var(--w40);transition:color .3s;position:relative;z-index:1;font-weight:400}
 .saint-chip:hover .sname{color:var(--w60)}
 .saint-chip:hover .saint-icon{opacity:.6}
 .saint-chip.active{border-color:color-mix(in srgb,var(--saint-color) 35%,transparent);
@@ -118,10 +118,10 @@ scrollbar-width:thin;scrollbar-color:var(--w10) transparent}
 #relic-cabinet-wrap::-webkit-scrollbar{width:4px}
 #relic-cabinet-wrap::-webkit-scrollbar-track{background:transparent}
 #relic-cabinet-wrap::-webkit-scrollbar-thumb{background:var(--w10);border-radius:2px}
-#relic-cabinet{display:grid;grid-template-columns:repeat(2,1fr);gap:.7em;
-padding:.3em}
+#relic-cabinet{display:grid;grid-template-columns:repeat(3,1fr);gap:.4em;
+padding:.3em .5em}
 /* ── Niche: arched reliquary compartment ── */
-.cabinet-niche{aspect-ratio:.88;border-radius:0;display:flex;flex-direction:column;
+.cabinet-niche{aspect-ratio:.82;border-radius:0;display:flex;flex-direction:column;
 align-items:center;justify-content:flex-end;cursor:grab;position:relative;
 border:1px solid var(--w10);background:rgba(255,255,255,.015);transition:all .35s ease;overflow:hidden;
 clip-path:polygon(0% 12%,5% 5%,15% 1%,50% 0%,85% 1%,95% 5%,100% 12%,100% 100%,0% 100%)}
@@ -2495,19 +2495,22 @@ function synthLawr(c,v,t,dur,hz,vel,acc,slide,step){
     e.gain.exponentialRampToValueAtTime(0.001,t+dur*3);
     src.connect(bp);bp.connect(lp);lp.connect(e);e.connect(o);src.start(t);src.stop(t+dur*3+0.02);
   }else if(rid==='lead'){
-    // Manus — the hand turning the body: resonant plucked line with waveshaper bite
-    const s=c.createOscillator();s.type='sawtooth';s.frequency.value=hz;
-    // Second detuned osc for thickness
-    const s2=c.createOscillator();s2.type='square';s2.frequency.value=hz*1.002;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=6;
-    lp.frequency.setValueAtTime(hz*10,t);
-    lp.frequency.exponentialRampToValueAtTime(hz*2,t+dur*0.4);
-    lp.frequency.setTargetAtTime(hz*1.2,t+dur*0.4,dur*0.3);
+    // Manus — the hand turning the body on the gridiron: alternating arp
+    // Walks through F major scale degrees, different note per step
+    const degrees=[0,2,4,5,7,9,11,12,11,9,7,5,4,2,0,-1];// up then down
+    const semitones=degrees[step%16];
+    const arpHz=hz*Math.pow(2,semitones/12);
+    const s=c.createOscillator();s.type='sawtooth';s.frequency.value=arpHz;
+    const s2=c.createOscillator();s2.type='square';s2.frequency.value=arpHz*1.002;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=5;
+    lp.frequency.setValueAtTime(arpHz*8,t);
+    lp.frequency.exponentialRampToValueAtTime(arpHz*2,t+dur*0.4);
+    lp.frequency.setTargetAtTime(arpHz*1.2,t+dur*0.4,dur*0.3);
     const ws=c.createWaveShaper();const curve=new Float32Array(256);
     for(let i=0;i<256;i++){const x=(i/128)-1;curve[i]=Math.tanh(x*2);}ws.curve=curve;
     const e=c.createGain();e.gain.setValueAtTime(0,t);
-    e.gain.linearRampToValueAtTime(vel*0.35,t+0.003);
-    e.gain.setTargetAtTime(vel*0.18,t+0.003,dur*0.3);
+    e.gain.linearRampToValueAtTime(vel*0.32,t+0.003);
+    e.gain.setTargetAtTime(vel*0.16,t+0.003,dur*0.3);
     e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
     s.connect(lp);s2.connect(lp);lp.connect(ws);ws.connect(e);e.connect(o);
     s.start(t);s2.start(t);s.stop(t+dur*1.6);s2.stop(t+dur*1.6);
