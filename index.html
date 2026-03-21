@@ -283,10 +283,10 @@ display:flex;align-items:center;justify-content:center;font-size:1rem;transition
 #cert-text{font-family:'Instrument Serif',serif;font-style:italic;font-size:.55rem;color:var(--w20);text-align:center;line-height:1.6;padding:0 .4em}
 /* Votive shelves — positioned in the left and right nave columns of the frame */
 #votive-tray{display:contents}/* tray wrapper dissolves; children use .votive-shelf */
-.votive-shelf{position:absolute;top:22%;bottom:12%;display:flex;flex-direction:column;
-justify-content:space-evenly;align-items:center;z-index:4;width:44px;padding:0}
-.votive-shelf-left{left:0}
-.votive-shelf-right{right:0}
+.votive-shelf{position:absolute;top:18%;bottom:10%;display:flex;flex-direction:column;
+justify-content:space-evenly;align-items:center;z-index:6;width:56px;padding:4px 0;pointer-events:all}
+.votive-shelf-left{left:6px}
+.votive-shelf-right{right:6px}
 .votive{display:flex;flex-direction:column;align-items:center;gap:3px;
 cursor:pointer;padding:4px 2px;border:1px solid transparent;border-radius:3px;
 transition:all .3s ease;opacity:.6}
@@ -1512,6 +1512,7 @@ flex-shrink:0;overflow:hidden;touch-action:none}
         </svg>
         <div id="slot-grid"></div>
       </div>
+    </div><!-- /reliquary-frame -->
     <!-- ═══ VOTIVES — shelved in left and right nave columns ═══ -->
     <div class="votive-shelf votive-shelf-left">
     <div class="votive" data-id="campana" title="Campana — bell tower">
@@ -1652,7 +1653,6 @@ flex-shrink:0;overflow:hidden;touch-action:none}
       <span class="votive-name">Lapis</span>
     </div>
     </div><!-- /votive-shelf-right -->
-    </div><!-- /reliquary-frame -->
     <div id="idle-msg"></div>
     <div id="body-title">Reliquary</div>
     <canvas id="visualizer"></canvas>
