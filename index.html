@@ -238,8 +238,10 @@ transition:opacity .5s ease,filter .3s ease;opacity:0;top:3px}
 /* Relic handle — draggable element, separate from its home slot */
 .relic-handle{position:absolute;transform:translate(-50%,-50%);width:72px;height:72px;
 cursor:grab;z-index:5;pointer-events:all;display:flex;flex-direction:column;align-items:center;justify-content:center;
-border-radius:50%;touch-action:none}
+border-radius:50%;touch-action:none;overflow:visible}
 .relic-handle:active{cursor:grabbing}
+.relic-handle .slot-relic-img{position:relative;width:62px;height:62px;top:0;opacity:1;
+filter:brightness(1.1) contrast(1.05);animation:relicFloat 4s ease-in-out infinite;pointer-events:none}
 /* Home marker — subtle ring showing where the slot is */
 .slot-home{width:70%;height:70%;border:1px dashed rgba(255,255,255,.15);border-radius:50%;
 transition:border-color .5s}
@@ -4159,9 +4161,12 @@ function onProxMove(ev){
   const pctY=((ev.clientY-cr.top)/cr.height)*100;
   proxDrag.handle.style.left=pctX+'%';
   proxDrag.handle.style.top=pctY+'%';
-  // Calculate distance from home slot for gain
+  // Calculate distance from home slot for gain + subtle scale
   const hdx=ev.clientX-proxDrag.homeX,hdy=ev.clientY-proxDrag.homeY;
   const gain=proximityGain(hdx,hdy);
+  const dist=Math.sqrt(hdx*hdx+hdy*hdy);
+  const scale=1.0-Math.min(dist/PROX_RADIUS,1)*0.15;// 1.0 at home, 0.85 at max
+  proxDrag.handle.style.transform='translate(-50%,-50%) scale('+scale+')';
   if(s.voice&&s.voice.output){
     s.voice.output.gain.cancelScheduledValues(AC.ctx.currentTime);
     s.voice.output.gain.setTargetAtTime(gain,AC.ctx.currentTime,0.06);
