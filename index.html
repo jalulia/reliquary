@@ -1868,7 +1868,7 @@ function initAudio(){
   // Room bus — cathedral convolver, bypasses compressor
   ROOM.ctx=c;ROOM.convolver=buildCathedralConvolver(c);
   ROOM.masterGain=c.createGain();ROOM.masterGain.gain.value=1.0;
-  ROOM.busDry=c.createGain();ROOM.busDry.gain.value=0.28;
+  ROOM.busDry=c.createGain();ROOM.busDry.gain.value=0.4;// raised from 0.28 — votives need presence
   ROOM.busSend=c.createGain();ROOM.busSend.gain.value=0.85;
   ROOM.busWet=c.createGain();ROOM.busWet.gain.value=0.9;
   ROOM.masterGain.connect(ROOM.busDry);ROOM.masterGain.connect(ROOM.busSend);
@@ -3512,7 +3512,7 @@ function synthIncensum(ctx,out){
   // Smoke: pink noise → tight bandpass (200–600 Hz), very quiet, slow breath LFO
   const ns=ctx.createBufferSource();ns.buffer=getPinkNoise(ctx);ns.loop=true;
   const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=380;bp.Q.value=1.8;
-  const sg=ctx.createGain();sg.gain.value=0.02;
+  const sg=ctx.createGain();sg.gain.value=0.035;// raised for audibility
   const slfo=ctx.createOscillator();slfo.type='sine';slfo.frequency.value=0.08;
   const slg=ctx.createGain();slg.gain.value=0.006;
   slfo.connect(slg);slg.connect(sg.gain);
@@ -3634,86 +3634,84 @@ function synthCalix(ctx,out){
 }
 
 function synthLilium(ctx,out){
-  // Petal pad: two detuned sines a fifth apart, gentle and warm
-  const o1=ctx.createOscillator();o1.type='sine';o1.frequency.value=440;o1.detune.value=(Math.random()-0.5)*8;
-  const o2=ctx.createOscillator();o2.type='sine';o2.frequency.value=660;o2.detune.value=(Math.random()-0.5)*8;
-  const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800;lp.Q.value=0.5;
-  const mg=ctx.createGain();mg.gain.value=0.024;
-  const blfo=ctx.createOscillator();blfo.type='sine';blfo.frequency.value=0.06;
-  const bg=ctx.createGain();bg.gain.value=0.012;
-  blfo.connect(bg);bg.connect(mg.gain);
-  o1.connect(lp);o2.connect(lp);lp.connect(mg);mg.connect(out);
-  o1.start();o2.start();blfo.start();
-  // Soft breathy texture
+  // Lily breath — near-subliminal high-frequency air shimmer
+  // Adds "air" to the top of the spectrum without clashing with any saint key
+  // Breathy texture: pink noise through resonant high bandpass
   const ns=ctx.createBufferSource();ns.buffer=getPinkNoise(ctx);ns.loop=true;
-  const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2400;bp.Q.value=1.8;
-  const ng=ctx.createGain();ng.gain.value=0.016;
-  ns.connect(bp);bp.connect(ng);ng.connect(out);ns.start();
-  return{stop(){try{o1.stop();o2.stop();blfo.stop();ns.stop();}catch(e){}},
-    scaleUp(f,t,d){mg.gain.setTargetAtTime(0.024*f,t,d*0.3);ng.gain.setTargetAtTime(0.016*f,t,d*0.3);}};
+  const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=4200;bp.Q.value=4;
+  // Breath rhythm: very slow amplitude modulation
+  const breathLFO=ctx.createOscillator();breathLFO.type='sine';breathLFO.frequency.value=0.15;
+  const breathG=ctx.createGain();breathG.gain.value=0.008;
+  breathLFO.connect(breathG);
+  const ng=ctx.createGain();ng.gain.value=0.022;
+  breathG.connect(ng.gain);
+  ns.connect(bp);bp.connect(ng);ng.connect(out);ns.start();breathLFO.start();
+  // High shimmer: two barely-audible sines creating interference beating
+  // Well above any saint's harmonic range — purely atmospheric
+  const sh1=ctx.createOscillator();sh1.type='sine';sh1.frequency.value=5200;
+  const sh2=ctx.createOscillator();sh2.type='sine';sh2.frequency.value=5810;// ~10Hz beating with sh1's 5th harmonic
+  // Slow pitch drift on one — the shimmer breathes
+  const drift=ctx.createOscillator();drift.type='sine';drift.frequency.value=0.04;
+  const dg=ctx.createGain();dg.gain.value=15;// ±15Hz drift
+  drift.connect(dg);dg.connect(sh2.frequency);
+  const sg1=ctx.createGain();sg1.gain.value=0.009;
+  const sg2=ctx.createGain();sg2.gain.value=0.009;
+  sh1.connect(sg1);sg1.connect(out);
+  sh2.connect(sg2);sg2.connect(out);
+  sh1.start();sh2.start();drift.start();
+  return{stop(){try{ns.stop();breathLFO.stop();sh1.stop();sh2.stop();drift.stop();}catch(e){}},
+    scaleUp(f,t,d){ng.gain.setTargetAtTime(0.022*f,t,d*0.3);sg1.gain.setTargetAtTime(0.009*f,t,d*0.3);sg2.gain.setTargetAtTime(0.009*f,t,d*0.3);}};
 }
 
 function synthLiber(ctx,out){
-  // Warm vocal room — not menacing, not horror. The sound of a handful of monks
-  // murmuring vespers in a stone chapel. Soft, rounded, human.
-  // Triangle waves (not saws) through gentle lowpass (not bandpass) with tanh saturation
-  // to round everything warm, like Symeon's Canis approach but higher and vocal.
-  const voices=[
-    {hz:130,gain:0.04},  // baritone unison 1
-    {hz:132,gain:0.038}, // baritone unison 2 (1.5Hz beating = gentle chorus)
-    {hz:196,gain:0.032}, // tenor — a fifth above
-    {hz:198,gain:0.030}, // tenor 2 (beating)
-    {hz:262,gain:0.020}, // alto — octave above baritone
-  ];
+  // Sacred book — whispered prayer murmur + page turns
+  // KEY PRINCIPLE: No pitched tones. Vocal murmur is noise-based (formant-filtered),
+  // so it never clashes with any saint's key. Lives in the room, not the music.
+  let alive=true;
   const oscs=[];const gains=[];
-  // Shared tanh saturation — warms and rounds the signal like analog tape
-  const sat=ctx.createWaveShaper();
-  const curve=new Float32Array(256);
-  for(let i=0;i<256;i++){const x=(i/128)-1;curve[i]=Math.tanh(x*1.5);}
-  sat.curve=curve;sat.oversample='2x';
-  // Gentle lowpass — no harsh harmonics, just warm body
-  const masterLP=ctx.createBiquadFilter();masterLP.type='lowpass';masterLP.frequency.value=1800;masterLP.Q.value=0.5;
-  sat.connect(masterLP);masterLP.connect(out);
-  voices.forEach(v=>{
-    const o=ctx.createOscillator();o.type='triangle';// soft harmonics, not buzzy
-    o.frequency.value=v.hz;o.detune.value=(Math.random()-0.5)*8;
-    const g=ctx.createGain();g.gain.value=v.gain;
-    // Very slow breathing — 20-30 second cycles
-    const amLfo=ctx.createOscillator();amLfo.type='sine';
-    amLfo.frequency.value=0.035+Math.random()*0.03;
-    const amG=ctx.createGain();amG.gain.value=v.gain*0.4;
-    amLfo.connect(amG);amG.connect(g.gain);
-    o.connect(g);g.connect(sat);
-    o.start();amLfo.start();
-    oscs.push(o,amLfo);gains.push(g);
-  });
-  // Gentle pitch drift — human imperfection
-  const driftLFO=ctx.createOscillator();driftLFO.type='sine';driftLFO.frequency.value=0.03;
-  const driftG=ctx.createGain();driftG.gain.value=2;// ±2 cents — subtle
-  driftLFO.connect(driftG);
-  oscs.filter(o=>o.type==='triangle').forEach(o=>driftG.connect(o.detune));
-  driftLFO.start();
-  oscs.push(driftLFO);
+
+  // Whispered prayer murmur: band-limited noise with vocal formant peaks
+  // Not pitched — sits behind everything as human texture
+  const murmurSrc=ctx.createBufferSource();murmurSrc.buffer=getPinkNoise(ctx);murmurSrc.loop=true;
+  // Three formant filters for vowel character (ah/eh/oh averaged)
+  const f1=ctx.createBiquadFilter();f1.type='bandpass';f1.frequency.value=450;f1.Q.value=3;// "ah"
+  const f2=ctx.createBiquadFilter();f2.type='bandpass';f2.frequency.value=1100;f2.Q.value=2.5;// "eh"
+  const f3=ctx.createBiquadFilter();f3.type='bandpass';f3.frequency.value=2500;f3.Q.value=2;// presence
+  const m1=ctx.createGain();m1.gain.value=0.025;
+  const m2=ctx.createGain();m2.gain.value=0.018;
+  const m3=ctx.createGain();m3.gain.value=0.010;
+  murmurSrc.connect(f1);murmurSrc.connect(f2);murmurSrc.connect(f3);
+  f1.connect(m1);f2.connect(m2);f3.connect(m3);
+  m1.connect(out);m2.connect(out);m3.connect(out);
+  gains.push(m1,m2,m3);
+  // Syllabic rhythm: ~2.5Hz amplitude modulation (the speed of whispered Latin)
+  const syllLFO=ctx.createOscillator();syllLFO.type='sine';syllLFO.frequency.value=2.5;
+  const syllG=ctx.createGain();syllG.gain.value=0.008;
+  syllLFO.connect(syllG);syllG.connect(m1.gain);syllG.connect(m2.gain);
+  // Phrase breathing: 8-second phrases that swell and fade
+  const phraseLFO=ctx.createOscillator();phraseLFO.type='sine';phraseLFO.frequency.value=0.065;
+  const phraseG=ctx.createGain();phraseG.gain.value=0.012;
+  phraseLFO.connect(phraseG);phraseG.connect(m1.gain);phraseG.connect(m2.gain);phraseG.connect(m3.gain);
+  murmurSrc.start();syllLFO.start();phraseLFO.start();
+  oscs.push(murmurSrc,syllLFO,phraseLFO);
 
   // Page turn: pink noise shaped by 20 Hz AM (papery flutter), bandpass 1200–5000 Hz
-  let alive=true;
   function pageTurn(){
     if(!alive)return;
     const t=ctx.currentTime;
     const pl=Math.floor(ctx.sampleRate*0.18);
     const pb=ctx.createBuffer(1,pl,ctx.sampleRate),pd2=pb.getChannelData(0);
-    // Pink noise modulated by 20 Hz sine for paper flutter texture
     const pinkD=getPinkNoise(ctx).getChannelData(0);
     for(let i=0;i<pl;i++){
-      const env=Math.sin(Math.PI*i/pl); // smooth rise-fall
+      const env=Math.sin(Math.PI*i/pl);
       pd2[i]=pinkD[i%pinkD.length]*Math.sin(2*Math.PI*20*i/ctx.sampleRate)*env;
     }
     const ps=ctx.createBufferSource();ps.buffer=pb;
     const php=ctx.createBiquadFilter();php.type='highpass';php.frequency.value=1200;
     const plp=ctx.createBiquadFilter();plp.type='lowpass';plp.frequency.value=5000;
-    const pg=ctx.createGain();pg.gain.value=0.03;
+    const pg=ctx.createGain();pg.gain.value=0.04;
     ps.connect(php);php.connect(plp);plp.connect(pg);pg.connect(out);ps.start(t);
-    setTimeout(pageTurn,14000+Math.random()*18000);
+    setTimeout(pageTurn,12000+Math.random()*16000);
   }
   pageTurn();
   return{stop(){alive=false;oscs.forEach(o=>{try{o.stop();}catch(e){}});},
@@ -3721,24 +3719,21 @@ function synthLiber(ctx,out){
 }
 
 function synthLapis(ctx,out){
-  // Liturgical stone floor: deep room resonance (near 110 Hz "holy frequency")
-  // with occasional rubato footstep pairs — synthesized impacts, not noise bursts
-  // Organ pedal: stacked harmonics instead of single sine
-  const harmonics=[80,160,240,320];
-  const hAmps=[0.028,0.018,0.01,0.005];
-  const organLP=ctx.createBiquadFilter();organLP.type='lowpass';organLP.frequency.value=400;organLP.Q.value=0.5;
+  // Liturgical stone floor: sub-bass room bloom + rubato footsteps
+  // Uses a single low sine at ~80Hz (below any saint's root) for the "God frequency"
+  // room resonance — felt more than heard, never clashes with musical keys
+  const roomSine=ctx.createOscillator();roomSine.type='sine';roomSine.frequency.value=80;
+  const roomLP=ctx.createBiquadFilter();roomLP.type='lowpass';roomLP.frequency.value=120;roomLP.Q.value=0.5;
   const organG=ctx.createGain();organG.gain.value=0;
-  organG.gain.linearRampToValueAtTime(1,ctx.currentTime+2); // 2s fade-in
-  const organOscs=harmonics.map((hz,i)=>{
-    const o=ctx.createOscillator();o.type='sine';o.frequency.value=hz;
-    const g=ctx.createGain();g.gain.value=hAmps[i];
-    o.connect(g);g.connect(organLP);o.start();return o;
-  });
-  organLP.connect(organG);organG.connect(out);
-  // Breathing LFO on organ
+  organG.gain.linearRampToValueAtTime(1,ctx.currentTime+2);
+  const roomGain=ctx.createGain();roomGain.gain.value=0.05;
+  // Very slow breathing — the room itself expanding and contracting
   const olfo=ctx.createOscillator();olfo.type='sine';olfo.frequency.value=0.03;
-  const og=ctx.createGain();og.gain.value=0.006;
-  olfo.connect(og);og.connect(organG.gain);olfo.start();
+  const og=ctx.createGain();og.gain.value=0.015;
+  olfo.connect(og);og.connect(roomGain.gain);
+  roomSine.connect(roomLP);roomLP.connect(roomGain);roomGain.connect(organG);organG.connect(out);
+  roomSine.start();olfo.start();
+  const organOscs=[roomSine];
 
   let alive=true;
   // Footstep: synthesized impact using sine with pitch envelope (not a noise burst)
