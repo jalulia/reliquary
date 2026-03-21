@@ -58,51 +58,106 @@ transition:all .5s ease}
 #begin-btn:hover .btn-gem{opacity:.5;filter:url(#btnGlow)}
 #app{display:none;width:100%;height:100%;overflow:hidden}
 #app.active{display:flex}
+/* ═══ CATALOGUE — manuscript index & cabinet of curiosities ═══ */
 #catalogue{width:340px;min-width:300px;height:100%;border-right:1px solid var(--w10);
-display:flex;flex-direction:column;background:linear-gradient(180deg,var(--w02),transparent 40%)}
-#cat-header{padding:1.2em 1.6em .6em}
-#cat-header h2{font-family:'Pirata One',cursive;font-size:1.15rem;color:var(--w80);letter-spacing:.06em}
-#carousel-wrap{position:relative;border-bottom:1px solid var(--w10);flex-shrink:0}
-#carousel{display:flex;flex-wrap:wrap;gap:.3em;padding:.5em .8em;justify-content:center}
-.saint-chip{padding:.2em .45em;cursor:pointer;border:1px solid transparent;border-radius:3px;
-transition:all .3s ease;display:flex;align-items:center;gap:.3em;white-space:nowrap}
-.saint-chip .saint-icon{width:14px;height:14px;flex-shrink:0;opacity:.5;transition:opacity .3s}
+display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(10,10,10,.95),var(--bg) 60%);
+position:relative}
+#catalogue::after{content:'';position:absolute;top:0;right:0;bottom:0;width:1px;
+background:linear-gradient(180deg,transparent,var(--w10) 20%,var(--w10) 80%,transparent);pointer-events:none}
+/* ── Header: folio title ── */
+#cat-header{padding:.8em 1.2em .4em;position:relative}
+#cat-header h2{font-family:'Pirata One',cursive;font-size:.9rem;color:var(--w40);letter-spacing:.14em;
+text-transform:uppercase;display:flex;align-items:center;gap:.8em}
+#cat-header h2::before,#cat-header h2::after{content:'';flex:1;height:1px;
+background:linear-gradient(90deg,transparent,var(--w10),transparent)}
+/* ── Saint index: scrollable horizontal strip ── */
+#carousel-wrap{position:relative;flex-shrink:0;padding:0 .4em}
+#carousel-wrap::after{content:'';position:absolute;bottom:0;left:.8em;right:.8em;height:1px;
+background:linear-gradient(90deg,transparent,var(--w10) 15%,var(--w10) 85%,transparent)}
+#carousel{display:flex;gap:2px;padding:.3em .4em .6em;overflow-x:auto;overflow-y:hidden;
+scrollbar-width:none;-ms-overflow-style:none;justify-content:center;flex-wrap:wrap}
+#carousel::-webkit-scrollbar{display:none}
+/* ── Saint chip: manuscript index entry ── */
+.saint-chip{padding:.25em .5em;cursor:pointer;border:1px solid transparent;
+border-radius:2px;transition:all .25s ease;display:flex;align-items:center;gap:.35em;
+white-space:nowrap;position:relative;background:transparent}
+.saint-chip::before{content:'';position:absolute;inset:0;border-radius:2px;
+background:var(--saint-color);opacity:0;transition:opacity .3s;pointer-events:none}
+.saint-chip .saint-icon{width:13px;height:13px;flex-shrink:0;opacity:.35;
+transition:opacity .3s,filter .3s;position:relative;z-index:1}
 .saint-chip .saint-icon svg{width:100%;height:100%}
-.saint-chip .sname{font-size:.45rem;letter-spacing:.08em;text-transform:uppercase;color:var(--w40);transition:color .3s}
+.saint-chip .sname{font-size:.42rem;letter-spacing:.1em;text-transform:uppercase;
+color:var(--w30);transition:color .3s;position:relative;z-index:1;font-weight:400}
 .saint-chip:hover .sname{color:var(--w60)}
-.saint-chip.active{border-color:var(--w10);background:var(--w05)}
-.saint-chip.active .saint-icon{opacity:1}
-.saint-chip.active .sname{color:var(--w80)}
-#saint-info{padding:.6em 1.4em;border-bottom:1px solid var(--w10);
+.saint-chip:hover .saint-icon{opacity:.6}
+.saint-chip.active{border-color:color-mix(in srgb,var(--saint-color) 25%,transparent)}
+.saint-chip.active::before{opacity:.06}
+.saint-chip.active .saint-icon{opacity:1;filter:drop-shadow(0 0 3px var(--saint-color))}
+.saint-chip.active .sname{color:var(--w80);font-weight:500}
+/* ── Saint info: illuminated manuscript header ── */
+#saint-info{padding:.7em 1.2em .6em;position:relative;
 display:flex;align-items:baseline;gap:.6em;min-height:2.8em;flex-wrap:wrap}
-#saint-name{font-family:'Pirata One',cursive;font-size:1.3rem;
-color:var(--saint-color);transition:color .3s;letter-spacing:.04em}
-#saint-key{font-size:.55rem;letter-spacing:.12em;color:var(--w40);
-border:1px solid var(--w10);padding:.15em .4em;border-radius:2px}
+#saint-info::before{content:'';position:absolute;left:1.2em;top:0;width:2px;height:100%;
+background:linear-gradient(180deg,var(--saint-color),transparent);opacity:.3;transition:background .5s}
+#saint-info::after{content:'';position:absolute;bottom:0;left:.8em;right:.8em;height:1px;
+background:linear-gradient(90deg,transparent,var(--w10) 15%,var(--w10) 85%,transparent)}
+#saint-name{font-family:'Pirata One',cursive;font-size:1.35rem;
+color:var(--saint-color);transition:color .3s;letter-spacing:.04em;padding-left:.6em;
+text-shadow:0 0 24px color-mix(in srgb,var(--saint-color) 20%,transparent)}
+#saint-key{font-size:.5rem;letter-spacing:.14em;color:var(--w30);
+border:1px solid var(--w10);padding:.12em .4em;border-radius:1px;
+font-family:'IBM Plex Mono',monospace;font-weight:500;
+background:linear-gradient(135deg,rgba(255,255,255,.02),transparent)}
 #saint-vibe{font-family:'Instrument Serif',serif;font-style:italic;
-font-size:.65rem;color:var(--w40);letter-spacing:.04em;margin-left:auto}
-/* Cabinet relic layout — 3×3 grid of arched compartments */
-#relic-cabinet-wrap{flex:1;overflow-y:auto;padding:.6em .8em;
+font-size:.6rem;color:var(--w30);letter-spacing:.06em;margin-left:auto;
+text-shadow:0 0 12px rgba(255,255,255,.04)}
+/* ═══ Relic cabinet: cabinet of curiosities / Wunderkammer ═══ */
+#relic-cabinet-wrap{flex:1;overflow-y:auto;padding:.5em .6em .8em;
 scrollbar-width:thin;scrollbar-color:var(--w10) transparent}
-#relic-cabinet{display:grid;grid-template-columns:repeat(3,1fr);gap:.6em}
-.cabinet-niche{aspect-ratio:.85;border-radius:6px 6px 2px 2px;display:flex;flex-direction:column;
+#relic-cabinet-wrap::-webkit-scrollbar{width:4px}
+#relic-cabinet-wrap::-webkit-scrollbar-track{background:transparent}
+#relic-cabinet-wrap::-webkit-scrollbar-thumb{background:var(--w10);border-radius:2px}
+#relic-cabinet{display:grid;grid-template-columns:repeat(3,1fr);gap:.5em;
+padding:.2em}
+/* ── Niche: arched reliquary compartment ── */
+.cabinet-niche{aspect-ratio:.82;border-radius:0;display:flex;flex-direction:column;
 align-items:center;justify-content:flex-end;cursor:grab;position:relative;
 border:1px solid var(--w10);background:var(--bg);transition:all .35s ease;overflow:hidden;
-clip-path:polygon(0% 18%,8% 6%,20% 1%,50% 0%,80% 1%,92% 6%,100% 18%,100% 100%,0% 100%)}
-.cabinet-niche .relic-img{width:72%;height:72%;object-fit:contain;pointer-events:none;
-filter:brightness(1.1) contrast(1.05);transition:all .4s ease;position:absolute;top:12%;z-index:0}
-.cabinet-niche .rname{font-size:.48rem;letter-spacing:.1em;text-transform:uppercase;color:var(--w60);
-text-align:center;line-height:1.1;padding:.15em .3em;position:relative;z-index:2;
-background:linear-gradient(transparent,rgba(10,10,10,.92) 30%);width:100%;transition:color .3s;font-weight:400}
-.cabinet-niche .rtype{font-size:.4rem;letter-spacing:.06em;text-transform:uppercase;color:var(--w20);
-position:absolute;top:.2em;right:.3em;z-index:2;font-weight:500;background:rgba(10,10,10,.6);
-padding:.08em .2em;border-radius:2px}
-.cabinet-niche:hover{border-color:var(--saint-color);
-box-shadow:0 0 20px color-mix(in srgb,var(--saint-color) 18%,transparent),
-inset 0 0 16px color-mix(in srgb,var(--saint-color) 6%,transparent)}
-.cabinet-niche:hover .relic-img{filter:brightness(1.25) contrast(1.1) saturate(1.15);transform:scale(1.04)}
+clip-path:polygon(0% 16%,6% 6%,18% 1%,50% 0%,82% 1%,94% 6%,100% 16%,100% 100%,0% 100%)}
+.cabinet-niche::before{content:'';position:absolute;inset:0;
+background:linear-gradient(180deg,
+rgba(255,255,255,.015) 0%,transparent 30%,transparent 70%,
+rgba(10,10,10,.8) 100%);pointer-events:none;z-index:1}
+.cabinet-niche::after{content:'';position:absolute;top:0;left:0;right:0;height:20%;
+background:radial-gradient(ellipse 80% 100% at 50% 0%,rgba(255,255,255,.03),transparent);
+pointer-events:none;z-index:1}
+.cabinet-niche .relic-img{width:68%;height:68%;object-fit:contain;pointer-events:none;
+filter:brightness(1.05) contrast(1.05) saturate(.9);transition:all .4s ease;
+position:absolute;top:14%;z-index:0;
+drop-shadow:0 0 4px rgba(255,255,255,.08)}
+.cabinet-niche .rname{font-size:.44rem;letter-spacing:.12em;text-transform:uppercase;color:var(--w40);
+text-align:center;line-height:1.15;padding:.3em .25em .2em;position:relative;z-index:2;
+background:linear-gradient(transparent,rgba(10,10,10,.95) 20%);width:100%;transition:color .35s;
+font-weight:400;font-family:'IBM Plex Mono',monospace}
+.cabinet-niche .rtype{font-size:.36rem;letter-spacing:.08em;text-transform:uppercase;
+color:var(--w20);position:absolute;top:.3em;right:.25em;z-index:2;font-weight:500;
+background:rgba(10,10,10,.7);padding:.06em .2em;border-radius:1px;
+border:1px solid rgba(255,255,255,.04);font-family:'IBM Plex Mono',monospace;
+transition:color .3s,border-color .3s}
+/* Niche hover: candlelit glow */
+.cabinet-niche:hover{border-color:color-mix(in srgb,var(--saint-color) 40%,transparent);
+box-shadow:0 0 16px color-mix(in srgb,var(--saint-color) 14%,transparent),
+0 0 40px color-mix(in srgb,var(--saint-color) 6%,transparent),
+inset 0 0 20px color-mix(in srgb,var(--saint-color) 8%,transparent),
+inset 0 -8px 16px color-mix(in srgb,var(--saint-color) 4%,transparent)}
+.cabinet-niche:hover .relic-img{filter:brightness(1.3) contrast(1.12) saturate(1.1);
+transform:scale(1.06) translateY(-2px);
+drop-shadow:0 0 8px color-mix(in srgb,var(--saint-color) 30%,transparent)}
 .cabinet-niche:hover .rname{color:var(--saint-color)}
-.cabinet-niche.placed{opacity:.12;border-style:dashed;pointer-events:none;cursor:default;filter:grayscale(.8)}
+.cabinet-niche:hover .rtype{color:var(--w40);border-color:color-mix(in srgb,var(--saint-color) 15%,transparent)}
+.cabinet-niche.placed{opacity:.1;border-style:dashed;border-color:var(--w10);
+pointer-events:none;cursor:default;filter:grayscale(.9)}
+.cabinet-niche.placed::before{background:rgba(10,10,10,.6)}
 .cabinet-niche.dragging{transform:scale(1.12);z-index:10}
 .relic-cell{aspect-ratio:1;border-radius:6px;display:flex;flex-direction:column;
 align-items:center;justify-content:flex-end;cursor:grab;position:relative;
@@ -320,7 +375,9 @@ color:rgba(218,165,32,0);letter-spacing:.1em;text-align:center;transition:color 
 white-space:nowrap;z-index:5}
 #locus-label.revealed{color:rgba(218,165,32,.55)}
 /* Tap-to-place states */
-.cabinet-niche.tap-selected{outline:2px solid var(--saint-color);outline-offset:1px;opacity:1!important}
+.cabinet-niche.tap-selected{outline:1px solid var(--saint-color);outline-offset:2px;opacity:1!important;
+box-shadow:0 0 20px color-mix(in srgb,var(--saint-color) 20%,transparent),
+inset 0 0 12px color-mix(in srgb,var(--saint-color) 10%,transparent)}
 .slot.tap-ready{animation:tapPulse 1s ease-in-out infinite}
 @keyframes tapPulse{0%,100%{box-shadow:0 0 4px rgba(255,255,255,.1)}50%{box-shadow:0 0 12px rgba(255,255,255,.3)}}
 #drag-ghost{position:fixed;pointer-events:none;z-index:9999;width:56px;height:56px;
@@ -336,21 +393,28 @@ border:none;opacity:0;transition:opacity .15s;background:transparent;overflow:hi
 /* ── Catalogue: compact strip at top ── */
 #catalogue{width:100%;height:auto;border-right:none;border-bottom:1px solid var(--w10);
 flex-shrink:0;overflow:hidden;touch-action:none}
-#cat-header{padding:.4em .6em .2em}
-#cat-header h2{font-size:.8rem}
+#catalogue::after{display:none}
+#cat-header{padding:.3em .5em .15em}
+#cat-header h2{font-size:.7rem;letter-spacing:.1em}
+#cat-header h2::before,#cat-header h2::after{display:none}
 #carousel-wrap{padding:0}
-#carousel{gap:.2em;padding:.3em .4em}
-.saint-chip{padding:.35em .6em;font-size:.55rem;min-height:44px}
-.saint-chip .saint-icon{width:14px;height:14px}
-#saint-info{padding:.2em .6em;min-height:1.6em}
-#saint-name{font-size:.9rem}
-#saint-key{font-size:.45rem;padding:.08em .3em}
-#saint-vibe{font-size:.55rem}
-#relic-cabinet-wrap{padding:.2em .3em;overflow-y:auto;-webkit-overflow-scrolling:touch}
-#relic-cabinet{grid-template-columns:repeat(3,1fr);gap:.2em}
-.cabinet-niche{aspect-ratio:1;border-radius:2px;max-width:72px;margin:0 auto}
-.cabinet-niche .relic-img{width:60%;height:60%}
-.cabinet-niche .relic-label{font-size:.25rem;letter-spacing:.04em}
+#carousel-wrap::after{left:.4em;right:.4em}
+#carousel{gap:2px;padding:.2em .3em .3em;flex-wrap:wrap}
+.saint-chip{padding:.3em .5em;min-height:40px}
+.saint-chip .saint-icon{width:12px;height:12px}
+.saint-chip .sname{font-size:.38rem}
+#saint-info{padding:.2em .5em;min-height:1.4em}
+#saint-info::before{left:.5em;width:1.5px}
+#saint-name{font-size:.85rem;padding-left:.4em}
+#saint-key{font-size:.4rem;padding:.06em .25em}
+#saint-vibe{font-size:.48rem}
+#relic-cabinet-wrap{padding:.15em .2em;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#relic-cabinet{grid-template-columns:repeat(3,1fr);gap:.2em;padding:.1em}
+.cabinet-niche{aspect-ratio:.9;max-width:72px;margin:0 auto;
+clip-path:polygon(0% 14%,5% 5%,16% 1%,50% 0%,84% 1%,95% 5%,100% 14%,100% 100%,0% 100%)}
+.cabinet-niche .relic-img{width:58%;height:58%;top:16%}
+.cabinet-niche .rname{font-size:.32rem;letter-spacing:.06em;padding:.2em .15em .15em}
+.cabinet-niche .rtype{font-size:.28rem;top:.2em;right:.15em}
 
 /* ── Reliquary: fills remaining height, NO scroll ── */
 #reliquary-panel{flex:1;min-height:0;overflow:hidden}
@@ -471,7 +535,9 @@ flex-shrink:0;overflow:hidden;touch-action:none}
       <span id="saint-key">D</span>
       <span id="saint-vibe">Flayed alive</span>
     </div>
-    <div id="relic-cabinet-wrap"><div id="relic-cabinet"></div></div>
+    <div id="relic-cabinet-wrap">
+      <div id="relic-cabinet"></div>
+    </div>
   </div>
   <div id="reliquary-panel">
     <svg id="noise-overlay" width="100%" height="100%">
