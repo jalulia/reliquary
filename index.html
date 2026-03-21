@@ -11,7 +11,7 @@
 :root{
   --bg:#0A0A0A;--cinnabar:#FF4500;--cinnabar-dim:rgba(255,69,0,.15);
   --w95:rgba(255,255,255,.92);--w80:rgba(255,255,255,.78);--w60:rgba(255,255,255,.58);
-  --w40:rgba(255,255,255,.38);--w20:rgba(255,255,255,.18);--w10:rgba(255,255,255,.08);
+  --w40:rgba(255,255,255,.38);--w30:rgba(255,255,255,.28);--w20:rgba(255,255,255,.18);--w10:rgba(255,255,255,.08);
   --w05:rgba(255,255,255,.04);--w02:rgba(255,255,255,.02);
   --saint-color:#FF4500;--glow-intensity:0;--completion-color:var(--saint-color);
   --convergence-pulse:0;
@@ -70,7 +70,7 @@ transition:all .3s ease;display:flex;align-items:center;gap:.3em;white-space:now
 .saint-chip .saint-icon svg{width:100%;height:100%}
 .saint-chip .sname{font-size:.45rem;letter-spacing:.08em;text-transform:uppercase;color:var(--w40);transition:color .3s}
 .saint-chip:hover .sname{color:var(--w60)}
-.saint-chip.active{border-color:var(--w10);background:var(--w05)}
+.saint-chip.active{border-color:var(--w20);background:var(--w10)}
 .saint-chip.active .saint-icon{opacity:1}
 .saint-chip.active .sname{color:var(--w80)}
 #saint-info{padding:.6em 1.4em;border-bottom:1px solid var(--w10);
@@ -80,7 +80,7 @@ color:var(--saint-color);transition:color .3s;letter-spacing:.04em}
 #saint-key{font-size:.55rem;letter-spacing:.12em;color:var(--w40);
 border:1px solid var(--w10);padding:.15em .4em;border-radius:2px}
 #saint-vibe{font-family:'Instrument Serif',serif;font-style:italic;
-font-size:.65rem;color:var(--w20);letter-spacing:.04em;margin-left:auto}
+font-size:.65rem;color:var(--w40);letter-spacing:.04em;margin-left:auto}
 /* Cabinet relic layout — 3×3 grid of arched compartments */
 #relic-cabinet-wrap{flex:1;overflow-y:auto;padding:.6em .8em;
 scrollbar-width:thin;scrollbar-color:var(--w10) transparent}
@@ -91,10 +91,10 @@ border:1px solid var(--w10);background:var(--bg);transition:all .35s ease;overfl
 clip-path:polygon(0% 18%,8% 6%,20% 1%,50% 0%,80% 1%,92% 6%,100% 18%,100% 100%,0% 100%)}
 .cabinet-niche .relic-img{width:72%;height:72%;object-fit:contain;pointer-events:none;
 filter:brightness(1.1) contrast(1.05);transition:all .4s ease;position:absolute;top:12%;z-index:0}
-.cabinet-niche .rname{font-size:.38rem;letter-spacing:.1em;text-transform:uppercase;color:var(--w60);
+.cabinet-niche .rname{font-size:.5rem;letter-spacing:.1em;text-transform:uppercase;color:var(--w60);
 text-align:center;line-height:1.1;padding:.15em .3em;position:relative;z-index:2;
 background:linear-gradient(transparent,rgba(10,10,10,.92) 30%);width:100%;transition:color .3s;font-weight:400}
-.cabinet-niche .rtype{font-size:.26rem;letter-spacing:.06em;text-transform:uppercase;color:var(--w20);
+.cabinet-niche .rtype{font-size:.42rem;letter-spacing:.06em;text-transform:uppercase;color:var(--w20);
 position:absolute;top:.2em;right:.3em;z-index:2;font-weight:500;background:rgba(10,10,10,.6);
 padding:.08em .2em;border-radius:2px}
 .cabinet-niche:hover{border-color:var(--saint-color);
@@ -109,7 +109,7 @@ align-items:center;justify-content:flex-end;cursor:grab;position:relative;
 border:1px solid var(--w10);background:var(--bg);transition:all .35s ease;overflow:hidden}
 .relic-cell .relic-img{width:78%;height:78%;object-fit:contain;pointer-events:none;
 filter:brightness(1.1) contrast(1.05);transition:all .4s ease;position:absolute;top:4%;
-z-index:0;drop-shadow:0 0 6px rgba(255,255,255,.15)}
+z-index:0;filter:brightness(1.1) drop-shadow(0 0 6px rgba(255,255,255,.15))}
 .relic-cell .rname{font-size:.42rem;letter-spacing:.12em;text-transform:uppercase;
 color:var(--w60);text-align:center;line-height:1.1;padding:.15em .3em;
 position:relative;z-index:2;background:linear-gradient(transparent,rgba(10,10,10,.92) 30%);
@@ -209,24 +209,24 @@ color-mix(in srgb,var(--saint-color) calc(var(--glow-intensity) * 1%),transparen
 pointer-events:none;transition:all 1.5s ease;opacity:calc(var(--glow-intensity) * 0.3)}
 #noise-overlay{position:absolute;inset:0;pointer-events:none;opacity:.03;mix-blend-mode:overlay}
 #body-title{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);
-font-family:'Pirata One',cursive;font-size:.7rem;color:var(--w20);
+font-family:'Pirata One',cursive;font-size:.7rem;color:var(--w30);
 letter-spacing:.2em;text-transform:uppercase;transition:color .5s}
 #body-title.gold{color:color-mix(in srgb,var(--completion-color) 60%,transparent)}
 #idle-msg{position:absolute;bottom:110px;left:50%;transform:translateX(-50%);
 font-family:'Instrument Serif',serif;font-style:italic;font-size:.7rem;
-color:var(--w20);letter-spacing:.05em;white-space:nowrap;opacity:0;
+color:var(--w30);letter-spacing:.05em;white-space:nowrap;opacity:0;
 transition:opacity .8s ease;pointer-events:none}
 #idle-msg.visible{opacity:1}
 #slot-grid{position:absolute;inset:0;pointer-events:none}
 /* ── SLOTS: invisible hit areas, no borders ── */
 .slot{position:absolute;transform:translate(-50%,-50%);width:72px;height:72px;border-radius:50%;
-border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;
-transition:all .4s ease;pointer-events:all;background:transparent;cursor:crosshair}
+border:1px dashed rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;justify-content:center;
+transition:all .4s ease;pointer-events:all;background:radial-gradient(circle, rgba(255,255,255,.02) 30%, transparent 70%);cursor:crosshair}
 .slot::before{content:attr(data-label);position:absolute;bottom:-1.5em;
-font-size:.30rem;letter-spacing:.16em;text-transform:uppercase;
-color:rgba(255,255,255,.10);white-space:nowrap;transition:color .5s;pointer-events:none}
+font-size:.42rem;letter-spacing:.16em;text-transform:uppercase;
+color:rgba(255,255,255,.22);white-space:nowrap;transition:color .5s;pointer-events:none}
 .slot .slot-icon{display:none}
-.slot .slot-name{position:absolute;bottom:-2.6em;font-size:.28rem;letter-spacing:.12em;
+.slot .slot-name{position:absolute;bottom:-2.6em;font-size:.42rem;letter-spacing:.12em;
 text-transform:uppercase;color:rgba(255,255,255,.32);white-space:nowrap;text-align:center;
 pointer-events:none;opacity:0;transition:opacity .4s}
 .slot .slot-relic-img{width:92%;height:92%;object-fit:contain;position:absolute;
@@ -271,7 +271,7 @@ transition:max-height .4s ease,border-radius .3s;border-radius:6px 0 0 0;cursor:
 #auth-list{flex:1;overflow-y:auto;padding:.8em 1.4em;scrollbar-width:thin;scrollbar-color:var(--w10) transparent}
 .auth-entry{padding:.55em 0;border-bottom:1px solid var(--w05);display:flex;align-items:baseline;gap:.5em;animation:fadeSlideIn .3s ease both}
 @keyframes fadeSlideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.auth-num{font-size:.5rem;color:rgba(255,255,255,.12);min-width:1.4em;font-weight:500}
+.auth-num{font-size:.5rem;color:rgba(255,255,255,.25);min-width:1.4em;font-weight:500}
 .auth-relic{font-size:.6rem;letter-spacing:.05em}
 .auth-saint{font-family:'Instrument Serif',serif;font-style:italic;font-size:.55rem;color:rgba(255,255,255,.28);margin-left:auto;white-space:nowrap}
 #seal-area{padding:1.4em;border-top:1px solid var(--w10);display:flex;flex-direction:column;align-items:center;gap:.5em}
@@ -279,26 +279,27 @@ transition:max-height .4s ease,border-radius .3s;border-radius:6px 0 0 0;cursor:
 display:flex;align-items:center;justify-content:center;font-size:1rem;transition:all .6s ease;cursor:default;opacity:.3}
 #wax-seal.ready{opacity:.8;cursor:pointer;border-color:var(--cinnabar);box-shadow:0 0 25px rgba(255,69,0,.15)}
 #wax-seal.stamped{opacity:1;background:var(--cinnabar);border-color:color-mix(in srgb,var(--completion-color) 60%,transparent);box-shadow:0 0 35px rgba(255,69,0,.3),0 0 12px color-mix(in srgb,var(--completion-color) 15%,transparent)}
-#seal-label{font-size:.42rem;letter-spacing:.18em;text-transform:uppercase;color:var(--w20)}
+#seal-label{font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;color:var(--w20)}
 #cert-text{font-family:'Instrument Serif',serif;font-style:italic;font-size:.55rem;color:var(--w20);text-align:center;line-height:1.6;padding:0 .4em}
-/* Votive tray — anchored row at bottom of reliquary */
-#votive-tray{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;
-width:100%;padding:.6em .8em;gap:.3em;flex-shrink:0;
-border-top:1px solid rgba(218,165,32,.12);
-background:rgba(10,10,10,.85)}
-.votive{display:flex;flex-direction:column;align-items:center;gap:.25em;
-cursor:pointer;padding:.4em .35em;border:1px solid transparent;border-radius:4px;
-transition:all .3s ease;opacity:.55;min-width:52px}
-.votive-icon{width:28px;height:28px;fill:none;stroke:rgba(218,165,32,.7);stroke-width:1.1;
+/* Votive shelves — positioned in the left and right nave columns of the frame */
+#votive-tray{display:contents}/* tray wrapper dissolves; children use .votive-shelf */
+.votive-shelf{position:absolute;top:22%;bottom:12%;display:flex;flex-direction:column;
+justify-content:space-evenly;align-items:center;z-index:4;width:44px;padding:0}
+.votive-shelf-left{left:0}
+.votive-shelf-right{right:0}
+.votive{display:flex;flex-direction:column;align-items:center;gap:3px;
+cursor:pointer;padding:4px 2px;border:1px solid transparent;border-radius:3px;
+transition:all .3s ease;opacity:.6}
+.votive-icon{width:24px;height:24px;fill:none;stroke:rgba(218,165,32,.7);stroke-width:1.1;
 stroke-linecap:round;stroke-linejoin:round;transition:all .3s ease}
-.votive-name{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;
-color:rgba(218,165,32,.55);transition:color .3s;white-space:nowrap}
-.votive:hover{opacity:.85;border-color:rgba(218,165,32,.15);background:rgba(218,165,32,.04)}
-.votive:hover .votive-icon{stroke:rgba(218,165,32,.9)}
-.votive:hover .votive-name{color:rgba(218,165,32,.75)}
-.votive.active{opacity:1;border-color:rgba(218,165,32,.25);background:rgba(218,165,32,.06)}
+.votive-name{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.04em;text-transform:uppercase;
+color:rgba(218,165,32,.5);transition:color .3s;white-space:nowrap;text-align:center}
+.votive:hover{opacity:.9;border-color:rgba(218,165,32,.2);background:rgba(218,165,32,.05)}
+.votive:hover .votive-icon{stroke:rgba(218,165,32,.95)}
+.votive:hover .votive-name{color:rgba(218,165,32,.8)}
+.votive.active{opacity:1;border-color:rgba(218,165,32,.3);background:rgba(218,165,32,.08)}
 .votive.active .votive-icon{stroke:rgba(218,165,32,1);filter:drop-shadow(0 0 5px rgba(218,165,32,.45))}
-.votive.active .votive-name{color:rgba(218,165,32,.95);font-weight:400}
+.votive.active .votive-name{color:rgba(218,165,32,1);font-weight:400}
 @keyframes votivePulse{0%,100%{opacity:.9}50%{opacity:1}}
 #locus-label{position:absolute;bottom:1%;left:50%;transform:translateX(-50%);
 font-family:'Instrument Serif',serif;font-style:italic;font-size:.45rem;
@@ -326,17 +327,17 @@ flex-shrink:0;overflow:hidden;touch-action:none}
 #cat-header h2{font-size:.8rem}
 #carousel-wrap{padding:0}
 #carousel{gap:.2em;padding:.3em .4em}
-.saint-chip{padding:.25em .5em;font-size:.55rem;min-height:32px}
+.saint-chip{padding:.25em .5em;font-size:.55rem;min-height:44px}
 .saint-chip .saint-icon{width:14px;height:14px}
 #saint-info{padding:.2em .6em;min-height:1.6em}
 #saint-name{font-size:.9rem}
 #saint-key{font-size:.45rem;padding:.08em .3em}
 #saint-vibe{font-size:.55rem}
-#relic-cabinet-wrap{padding:.2em .3em;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#relic-cabinet-wrap{padding:.2em .3em;overflow-y:auto;-webkit-overflow-scrolling:touch;max-height:35vh}
 #relic-cabinet{grid-template-columns:repeat(3,1fr);gap:.2em}
 .cabinet-niche{aspect-ratio:1;border-radius:2px;max-width:72px;margin:0 auto}
 .cabinet-niche .relic-img{width:60%;height:60%}
-.cabinet-niche .relic-label{font-size:.25rem;letter-spacing:.04em}
+.cabinet-niche .relic-label{font-size:.4rem;letter-spacing:.04em}
 
 /* ── Reliquary: fills remaining height, NO scroll ── */
 #reliquary-panel{flex:1;min-height:0;overflow:hidden}
@@ -344,8 +345,8 @@ flex-shrink:0;overflow:hidden;touch-action:none}
 .reliquary-border svg{height:100%}
 
 /* ── Slots: touch-friendly size ── */
-.slot{width:42px;height:42px}
-.slot-label{font-size:.26rem}
+.slot{width:48px;height:48px}
+.slot-label{font-size:.4rem}
 .slot-relic-img{width:92%;height:92%}
 
 /* ── Drag ghost: smaller on mobile ── */
@@ -354,13 +355,13 @@ flex-shrink:0;overflow:hidden;touch-action:none}
 /* ── Saint SVG: bigger for fat finger targeting ── */
 #body-svg{max-width:75%;margin:0 auto}
 
-/* ── Votives: compact row, still readable ── */
-.votive{position:static;transform:none;display:inline-flex;padding:.2em .15em;min-width:40px}
+/* ── Votives: side shelves shrink on mobile ── */
+.votive-shelf{width:32px;top:12%;bottom:6%}
+.votive{padding:2px 1px}
 .votive:hover{transform:none}
 .votive.active{animation:none}
-.votive-icon{width:20px;height:20px}
-.votive-name{font-size:7px}
-#votive-tray{padding:.3em .2em;gap:.15em;flex-wrap:wrap}
+.votive-icon{width:16px;height:16px}
+.votive-name{font-size:5px;letter-spacing:.01em}
 #locus-label{position:static;transform:none;margin-top:.2em;font-size:.5rem}
 #idle-msg{font-size:.5rem}
 #body-title{font-size:.45rem}
@@ -1511,12 +1512,8 @@ flex-shrink:0;overflow:hidden;touch-action:none}
         </svg>
         <div id="slot-grid"></div>
       </div>
-    </div>
-    <div id="idle-msg"></div>
-    <div id="body-title">Reliquary</div>
-    <canvas id="visualizer"></canvas>
-    <!-- ═══ VOTIVES — structured tray at base of reliquary ═══ -->
-    <div id="votive-tray">
+    <!-- ═══ VOTIVES — shelved in left and right nave columns ═══ -->
+    <div class="votive-shelf votive-shelf-left">
     <div class="votive" data-id="campana" title="Campana — bell tower">
       <svg class="votive-icon" viewBox="0 0 48 48">
         <path d="M14,34 Q14,18 24,14 Q34,18 34,34"/>
@@ -1588,6 +1585,8 @@ flex-shrink:0;overflow:hidden;touch-action:none}
       </svg>
       <span class="votive-name">Liber</span>
     </div>
+    </div><!-- /votive-shelf-left -->
+    <div class="votive-shelf votive-shelf-right">
     <div class="votive" data-id="aqua" title="Aqua — holy water">
       <svg class="votive-icon" viewBox="0 0 48 48">
         <path d="M24,6 Q30,16 32,24 Q34,34 24,38 Q14,34 16,24 Q18,16 24,6"/>
@@ -1652,7 +1651,11 @@ flex-shrink:0;overflow:hidden;touch-action:none}
       </svg>
       <span class="votive-name">Lapis</span>
     </div>
-    </div><!-- /votive-tray -->
+    </div><!-- /votive-shelf-right -->
+    </div><!-- /reliquary-frame -->
+    <div id="idle-msg"></div>
+    <div id="body-title">Reliquary</div>
+    <canvas id="visualizer"></canvas>
     <div id="locus-label"></div>
   </div>
   <div id="authenticum">
@@ -4262,8 +4265,19 @@ function onDragEnd(ev){
   document.querySelectorAll('.slot.dragover').forEach(s=>s.classList.remove('dragover'));
   document.querySelectorAll('.illum-zone.hover').forEach(z=>z.classList.remove('hover'));
   document.querySelectorAll('.relic-cell.dragging').forEach(c=>c.classList.remove('dragging'));
-  // Kill audition
+  // Kill audition — must fully clean up persistent oscillators (acid, screw LFO)
   if(AC.auditionGain)AC.auditionGain.gain.setTargetAtTime(0,AC.ctx.currentTime,0.03);
+  if(auditionVoice){
+    // Stop persistent oscillators that survive beyond their voice
+    if(auditionVoice._acidOsc)try{auditionVoice._acidOsc.stop();auditionVoice._acidOsc=null;}catch(e){}
+    if(auditionVoice._acidLp)try{auditionVoice._acidLp.disconnect();}catch(e){}
+    if(auditionVoice._acidGain)try{auditionVoice._acidGain.disconnect();}catch(e){}
+    if(auditionVoice.output&&auditionVoice.output._screwLfo)try{auditionVoice.output._screwLfo.stop();}catch(e){}
+    if(auditionVoice._lfoFilter)try{auditionVoice._lfoFilter.disconnect();}catch(e){}
+    if(auditionVoice.saint)releaseSaintLFO(auditionVoice.saint);
+    const avOut=auditionVoice.output;
+    setTimeout(()=>{try{avOut.disconnect();}catch(e){}},300);
+  }
   auditionVoice=null;
 
   if(!dragging){slotDragStart=null;return;}
