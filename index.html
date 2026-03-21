@@ -1793,7 +1793,7 @@ const SAINTS=[
 {id:'stultitia',name:'Stultitia',desc:'Holy foolishness — swing offset modifier',type:'modifier',role:'modifier'},
 {id:'vestis',name:'Vestis',desc:'Rags — dusty drum break',type:'generator',role:'snare'},
 {id:'risvs',name:'Risvs',desc:'Laughter — erratic vocal chop',type:'generator',role:'vocal'},
-{id:'manvs_sy',name:'Manvs',desc:'Throwing hand — percussive stab',type:'generator',role:'stab'},
+{id:'manvs_sy',name:'Manvs',desc:'Throwing hand — plucked melodic string',type:'generator',role:'stab'},
 {id:'pes_sy',name:'Pes',desc:'Shuffling feet — behind-the-beat kick',type:'generator',role:'kick'},
 {id:'ocvlvs_sy',name:'Ocvlvs',desc:'Crazy eyes — pitch-warped modulation',type:'modifier',role:'modifier'},
 {id:'cor_sy',name:'Cor',desc:'Heart — off-grid MPC pulse',type:'clock',role:'clock'}]},
@@ -3126,9 +3126,26 @@ function synthSymeon(c,v,t,dur,hz,vel,acc,slide,step){
     e.gain.exponentialRampToValueAtTime(0.001,t+0.09);
     o.connect(bp);bp.connect(e);e.connect(_out(v));o.start(t);o.stop(t+0.1);
   }else if(rid==='stab'){
-    const o=c.createOscillator();o.type='square';o.frequency.value=hz;
-    const e=c.createGain();e.gain.setValueAtTime(vel*0.3,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.018);
-    o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+0.022);
+    // Manvs — the throwing hand: melodic plucked string with body resonance
+    // Like a hurdy-gurdy drone string struck percussively — pitched, sustaining, warm
+    const o1=c.createOscillator();o1.type='sawtooth';o1.frequency.value=hz;o1.detune.value=-4;
+    const o2=c.createOscillator();o2.type='triangle';o2.frequency.value=hz;o2.detune.value=4;
+    // Body resonance — wooden instrument cavity
+    const body=c.createBiquadFilter();body.type='peaking';body.frequency.value=hz*1.5;body.Q.value=3;body.gain.value=4;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=3;
+    lp.frequency.setValueAtTime(hz*8,t);lp.frequency.exponentialRampToValueAtTime(hz*2,t+dur*0.3);
+    lp.frequency.setTargetAtTime(hz*1.2,t+dur*0.3,dur*0.4);
+    // Gentle vibrato — the string still ringing
+    const vib=c.createOscillator();vib.type='sine';vib.frequency.value=4.5;
+    const vg=c.createGain();vg.gain.value=3;// subtle +-3 cents
+    vib.connect(vg);vg.connect(o1.detune);vg.connect(o2.detune);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.32,t+0.004);
+    e.gain.setTargetAtTime(vel*0.18,t+0.004,dur*0.35);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
+    o1.connect(body);o2.connect(body);body.connect(lp);lp.connect(e);e.connect(_out(v));
+    o1.start(t);o2.start(t);vib.start(t);
+    o1.stop(t+dur*1.6);o2.stop(t+dur*1.6);vib.stop(t+dur*1.6);
   }else if(rid==='kick'){
     makeSub(c,_out(v),t,hz,vel*1.05,dur);
     makeNoise(c,_out(v),t,vel*0.15,0.025,600,null);
