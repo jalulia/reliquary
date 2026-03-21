@@ -59,9 +59,9 @@ transition:all .5s ease}
 #app{display:none;width:100%;height:100%;overflow:hidden}
 #app.active{display:flex}
 /* ═══ CATALOGUE — manuscript index & cabinet of curiosities ═══ */
-#catalogue{width:340px;min-width:300px;height:100%;border-right:1px solid var(--w10);
-display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(10,10,10,.95),var(--bg) 60%);
-position:relative}
+#catalogue{width:340px;min-width:300px;height:100%;border-right:1px solid rgba(255,255,255,.12);
+display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(14,14,14,.98),var(--bg) 60%);
+position:relative;box-shadow:1px 0 8px rgba(0,0,0,.4)}
 #catalogue::after{content:'';position:absolute;top:0;right:0;bottom:0;width:1px;
 background:linear-gradient(180deg,transparent,var(--w10) 20%,var(--w10) 80%,transparent);pointer-events:none}
 /* ── Header: folio title ── */
@@ -90,59 +90,53 @@ transition:opacity .3s,filter .3s;position:relative;z-index:1}
 color:var(--w30);transition:color .3s;position:relative;z-index:1;font-weight:400}
 .saint-chip:hover .sname{color:var(--w60)}
 .saint-chip:hover .saint-icon{opacity:.6}
-.saint-chip.active{border-color:color-mix(in srgb,var(--saint-color) 25%,transparent)}
-.saint-chip.active::before{opacity:.06}
-.saint-chip.active .saint-icon{opacity:1;filter:drop-shadow(0 0 3px var(--saint-color))}
-.saint-chip.active .sname{color:var(--w80);font-weight:500}
+.saint-chip.active{border-color:color-mix(in srgb,var(--saint-color) 35%,transparent);
+background:color-mix(in srgb,var(--saint-color) 6%,transparent)}
+.saint-chip.active::before{opacity:.08}
+.saint-chip.active .saint-icon{opacity:1;filter:drop-shadow(0 0 4px var(--saint-color))}
+.saint-chip.active .sname{color:var(--w95);font-weight:500}
 /* ── Saint info: illuminated manuscript header ── */
-#saint-info{padding:.7em 1.2em .6em;position:relative;
-display:flex;align-items:baseline;gap:.6em;min-height:2.8em;flex-wrap:wrap}
+#saint-info{padding:.8em 1.2em .7em;position:relative;
+display:flex;align-items:baseline;gap:.6em;min-height:3em;flex-wrap:wrap}
 #saint-info::before{content:'';position:absolute;left:1.2em;top:0;width:2px;height:100%;
 background:linear-gradient(180deg,var(--saint-color),transparent);opacity:.3;transition:background .5s}
 #saint-info::after{content:'';position:absolute;bottom:0;left:.8em;right:.8em;height:1px;
 background:linear-gradient(90deg,transparent,var(--w10) 15%,var(--w10) 85%,transparent)}
-#saint-name{font-family:'Pirata One',cursive;font-size:1.35rem;
-color:var(--saint-color);transition:color .3s;letter-spacing:.04em;padding-left:.6em;
-text-shadow:0 0 24px color-mix(in srgb,var(--saint-color) 20%,transparent)}
+#saint-name{font-family:'Pirata One',cursive;font-size:1.6rem;
+color:var(--saint-color);transition:color .3s;letter-spacing:.05em;padding-left:.6em;
+text-shadow:0 0 24px color-mix(in srgb,var(--saint-color) 20%,transparent);line-height:1.1}
 #saint-key{font-size:.5rem;letter-spacing:.14em;color:var(--w30);
 border:1px solid var(--w10);padding:.12em .4em;border-radius:1px;
 font-family:'IBM Plex Mono',monospace;font-weight:500;
 background:linear-gradient(135deg,rgba(255,255,255,.02),transparent)}
 #saint-vibe{font-family:'Instrument Serif',serif;font-style:italic;
-font-size:.6rem;color:var(--w30);letter-spacing:.06em;margin-left:auto;
-text-shadow:0 0 12px rgba(255,255,255,.04)}
+font-size:.65rem;color:var(--w40);letter-spacing:.06em;margin-left:auto;
+text-shadow:0 0 12px rgba(255,255,255,.06)}
 /* ═══ Relic cabinet: cabinet of curiosities / Wunderkammer ═══ */
-#relic-cabinet-wrap{flex:1;overflow-y:auto;padding:.5em .6em .8em;
+#relic-cabinet-wrap{flex:1;overflow-y:auto;padding:.6em 1em 1em;
 scrollbar-width:thin;scrollbar-color:var(--w10) transparent}
 #relic-cabinet-wrap::-webkit-scrollbar{width:4px}
 #relic-cabinet-wrap::-webkit-scrollbar-track{background:transparent}
 #relic-cabinet-wrap::-webkit-scrollbar-thumb{background:var(--w10);border-radius:2px}
-#relic-cabinet{display:grid;grid-template-columns:repeat(3,1fr);gap:.5em;
-padding:.2em}
+#relic-cabinet{display:grid;grid-template-columns:repeat(2,1fr);gap:.7em;
+padding:.3em}
 /* ── Niche: arched reliquary compartment ── */
-.cabinet-niche{aspect-ratio:.82;border-radius:0;display:flex;flex-direction:column;
+.cabinet-niche{aspect-ratio:.88;border-radius:0;display:flex;flex-direction:column;
 align-items:center;justify-content:flex-end;cursor:grab;position:relative;
-border:1px solid var(--w10);background:var(--bg);transition:all .35s ease;overflow:hidden;
-clip-path:polygon(0% 16%,6% 6%,18% 1%,50% 0%,82% 1%,94% 6%,100% 16%,100% 100%,0% 100%)}
-.cabinet-niche::before{content:'';position:absolute;inset:0;
-background:linear-gradient(180deg,
-rgba(255,255,255,.015) 0%,transparent 30%,transparent 70%,
-rgba(10,10,10,.8) 100%);pointer-events:none;z-index:1}
-.cabinet-niche::after{content:'';position:absolute;top:0;left:0;right:0;height:20%;
-background:radial-gradient(ellipse 80% 100% at 50% 0%,rgba(255,255,255,.03),transparent);
-pointer-events:none;z-index:1}
-.cabinet-niche .relic-img{width:68%;height:68%;object-fit:contain;pointer-events:none;
+border:1px solid var(--w10);background:rgba(255,255,255,.015);transition:all .35s ease;overflow:hidden;
+clip-path:polygon(0% 12%,5% 5%,15% 1%,50% 0%,85% 1%,95% 5%,100% 12%,100% 100%,0% 100%)}
+.cabinet-niche .relic-img{width:62%;height:62%;object-fit:contain;pointer-events:none;
 filter:brightness(1.05) contrast(1.05) saturate(.9);transition:all .4s ease;
-position:absolute;top:14%;z-index:0;
+position:absolute;top:12%;z-index:0;
 drop-shadow:0 0 4px rgba(255,255,255,.08)}
-.cabinet-niche .rname{font-size:.44rem;letter-spacing:.12em;text-transform:uppercase;color:var(--w40);
-text-align:center;line-height:1.15;padding:.3em .25em .2em;position:relative;z-index:2;
-background:linear-gradient(transparent,rgba(10,10,10,.95) 20%);width:100%;transition:color .35s;
+.cabinet-niche .rname{font-size:.48rem;letter-spacing:.1em;text-transform:uppercase;color:var(--w60);
+text-align:center;line-height:1.2;padding:.45em .3em .3em;position:relative;z-index:2;
+background:rgba(10,10,10,.85);width:100%;transition:color .35s;
 font-weight:400;font-family:'IBM Plex Mono',monospace}
 .cabinet-niche .rtype{font-size:.36rem;letter-spacing:.08em;text-transform:uppercase;
-color:var(--w20);position:absolute;top:.3em;right:.25em;z-index:2;font-weight:500;
-background:rgba(10,10,10,.7);padding:.06em .2em;border-radius:1px;
-border:1px solid rgba(255,255,255,.04);font-family:'IBM Plex Mono',monospace;
+color:var(--w30);position:absolute;top:.3em;right:.3em;z-index:2;font-weight:500;
+background:rgba(10,10,10,.8);padding:.1em .25em;border-radius:1px;
+border:1px solid rgba(255,255,255,.06);font-family:'IBM Plex Mono',monospace;
 transition:color .3s,border-color .3s}
 /* Niche hover: candlelit glow */
 .cabinet-niche:hover{border-color:color-mix(in srgb,var(--saint-color) 40%,transparent);
@@ -157,7 +151,6 @@ drop-shadow:0 0 8px color-mix(in srgb,var(--saint-color) 30%,transparent)}
 .cabinet-niche:hover .rtype{color:var(--w40);border-color:color-mix(in srgb,var(--saint-color) 15%,transparent)}
 .cabinet-niche.placed{opacity:.1;border-style:dashed;border-color:var(--w10);
 pointer-events:none;cursor:default;filter:grayscale(.9)}
-.cabinet-niche.placed::before{background:rgba(10,10,10,.6)}
 .cabinet-niche.dragging{transform:scale(1.12);z-index:10}
 .relic-cell{aspect-ratio:1;border-radius:6px;display:flex;flex-direction:column;
 align-items:center;justify-content:flex-end;cursor:grab;position:relative;
@@ -405,15 +398,15 @@ flex-shrink:0;overflow:hidden;touch-action:none}
 .saint-chip .sname{font-size:.38rem}
 #saint-info{padding:.2em .5em;min-height:1.4em}
 #saint-info::before{left:.5em;width:1.5px}
-#saint-name{font-size:.85rem;padding-left:.4em}
+#saint-name{font-size:1rem;padding-left:.4em}
 #saint-key{font-size:.4rem;padding:.06em .25em}
 #saint-vibe{font-size:.48rem}
 #relic-cabinet-wrap{padding:.15em .2em;overflow-y:auto;-webkit-overflow-scrolling:touch}
-#relic-cabinet{grid-template-columns:repeat(3,1fr);gap:.2em;padding:.1em}
-.cabinet-niche{aspect-ratio:.9;max-width:72px;margin:0 auto;
-clip-path:polygon(0% 14%,5% 5%,16% 1%,50% 0%,84% 1%,95% 5%,100% 14%,100% 100%,0% 100%)}
-.cabinet-niche .relic-img{width:58%;height:58%;top:16%}
-.cabinet-niche .rname{font-size:.32rem;letter-spacing:.06em;padding:.2em .15em .15em}
+#relic-cabinet{grid-template-columns:repeat(3,1fr);gap:.25em;padding:.1em}
+.cabinet-niche{aspect-ratio:.9;max-width:80px;margin:0 auto;
+clip-path:polygon(0% 12%,5% 5%,15% 1%,50% 0%,85% 1%,95% 5%,100% 12%,100% 100%,0% 100%)}
+.cabinet-niche .relic-img{width:56%;height:56%;top:14%}
+.cabinet-niche .rname{font-size:.34rem;letter-spacing:.06em;padding:.25em .15em .15em}
 .cabinet-niche .rtype{font-size:.28rem;top:.2em;right:.15em}
 
 /* ── Reliquary: fills remaining height, NO scroll ── */
@@ -2693,27 +2686,28 @@ function synthLucy(c,v,t,dur,hz,vel,acc,slide,step){
       o1.stop(t+dur*3.2);o2.stop(t+dur*3.2);lfo.stop(t+dur*3.2);
     });
   }else if(rid==='melody'){
-    // Lacrimae — tears: weeping Solina with formant sweep, the vocal cry
-    // This should sound like someone sobbing through a synthesizer
-    const saws=[-12,-4,0,4,12];
-    const formant1=c.createBiquadFilter();formant1.type='bandpass';formant1.Q.value=5;
-    // Formant sweep: "ah" (800Hz) → "oh" (450Hz) — the sound of a mouth opening then closing in grief
-    formant1.frequency.setValueAtTime(800,t);
-    formant1.frequency.exponentialRampToValueAtTime(450,t+dur*1.2);
+    // Lacrimae — tears: weeping vocal cry, soft and mournful
+    // Triangle waves through formants — warmer than raw saws, less buzz
+    const voices=[-6,0,6];// fewer voices, less density
+    const formant1=c.createBiquadFilter();formant1.type='bandpass';formant1.Q.value=3;// lower Q, less piercing
+    formant1.frequency.setValueAtTime(700,t);
+    formant1.frequency.exponentialRampToValueAtTime(400,t+dur*1.5);
     const formant2=c.createBiquadFilter();formant2.type='bandpass';
-    formant2.frequency.setValueAtTime(2600,t);
-    formant2.frequency.exponentialRampToValueAtTime(1800,t+dur*1.2);
-    formant2.Q.value=3;
+    formant2.frequency.setValueAtTime(1800,t);// lower start (was 2600)
+    formant2.frequency.exponentialRampToValueAtTime(1200,t+dur*1.5);
+    formant2.Q.value=1.5;// much softer (was 3)
+    // Master LP to tame high harmonics
+    const masterLP=c.createBiquadFilter();masterLP.type='lowpass';masterLP.frequency.value=2400;masterLP.Q.value=0.5;
     const mix=c.createGain();mix.gain.value=1;
     const e=c.createGain();e.gain.setValueAtTime(0,t);
-    e.gain.linearRampToValueAtTime(vel*0.14,t+0.06);
-    e.gain.setTargetAtTime(vel*0.08,t+0.06,dur*0.5);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
-    saws.forEach(det=>{
-      const s=c.createOscillator();s.type='sawtooth';s.frequency.value=hz;s.detune.value=det;
-      s.connect(formant1);s.connect(formant2);s.start(t);s.stop(t+dur*2);
+    e.gain.linearRampToValueAtTime(vel*0.18,t+0.08);// slightly louder, slower attack
+    e.gain.setTargetAtTime(vel*0.12,t+0.08,dur*0.6);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
+    voices.forEach(det=>{
+      const s=c.createOscillator();s.type='triangle';s.frequency.value=hz;s.detune.value=det;
+      s.connect(formant1);s.connect(formant2);s.start(t);s.stop(t+dur*2.2);
     });
-    formant1.connect(mix);formant2.connect(mix);mix.connect(e);e.connect(o);
+    formant1.connect(mix);formant2.connect(mix);mix.connect(masterLP);masterLP.connect(e);e.connect(o);
   }else if(rid==='swell'){
     // Corona — crown of light: slow-building shimmer that blooms from nothing
     const notes=[hz,hz*1.26,hz*1.5,hz*1.875];// Eb maj7
@@ -2738,13 +2732,13 @@ function synthLucy(c,v,t,dur,hz,vel,acc,slide,step){
     const plg2=c.createGain();plg2.gain.value=600;
     pLfo.connect(plg1);plg1.connect(ap1.frequency);
     pLfo.connect(plg2);plg2.connect(ap2.frequency);
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*6;lp.Q.value=1;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*3;lp.Q.value=0.5;// darker, less buzz (was hz*6 Q1)
     const e=c.createGain();e.gain.setValueAtTime(0,t);
-    e.gain.linearRampToValueAtTime(vel*0.28,t+0.12);
-    e.gain.setTargetAtTime(vel*0.18,t+0.12,dur*0.6);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
-    saws.forEach(d=>{const s=c.createOscillator();s.type='sawtooth';s.frequency.value=hz;s.detune.value=d;s.connect(lp);s.start(t);s.stop(t+dur*2.1);});
-    lp.connect(ap1);ap1.connect(ap2);ap2.connect(e);e.connect(o);pLfo.start(t);pLfo.stop(t+dur*2.1);
+    e.gain.linearRampToValueAtTime(vel*0.2,t+0.15);// softer, slower (was vel*0.28 at 0.12)
+    e.gain.setTargetAtTime(vel*0.14,t+0.15,dur*0.6);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2.5);// longer tail
+    saws.forEach(d=>{const s=c.createOscillator();s.type='sawtooth';s.frequency.value=hz;s.detune.value=d;s.connect(lp);s.start(t);s.stop(t+dur*2.6);});
+    lp.connect(ap1);ap1.connect(ap2);ap2.connect(e);e.connect(o);pLfo.start(t);pLfo.stop(t+dur*2.6);
   }else if(rid==='chord'){
     // Manvs — hands: chorus-drenched minor chord stabs, Steve Stevens clean guitar character
     const chord=[hz,hz*1.189,hz*1.5];// root, minor third, fifth
@@ -2787,18 +2781,20 @@ function synthLucy(c,v,t,dur,hz,vel,acc,slide,step){
     const vg=c.createGain();vg.gain.value=3;// ±3 cents
     vib.connect(vg);vib.start(t);vib.stop(t+dur*2.2);
     const startHz=hz;const peakHz=hz*1.189;// minor 3rd
-    [-8,-3,0,3,8].forEach(det=>{
+    // Master LP to keep it warm — the longing resolves softly
+    const mLP=c.createBiquadFilter();mLP.type='lowpass';mLP.frequency.value=2200;mLP.Q.value=0.4;
+    mLP.connect(e);
+    [-6,0,6].forEach(det=>{// 3 voices (was 5) — less buzz, more clarity
       const s=c.createOscillator();s.type='sawtooth';s.detune.value=det;
       s.frequency.setValueAtTime(startHz,t);
-      s.frequency.linearRampToValueAtTime(peakHz,t+dur*0.35);// reach
-      s.frequency.exponentialRampToValueAtTime(startHz,t+dur*1.2);// resolve
-      vg.connect(s.detune);// vibrato on each voice
-      // Formants: "eh" opening to "ah"
-      const f1=c.createBiquadFilter();f1.type='bandpass';f1.Q.value=6;
-      f1.frequency.setValueAtTime(600,t);f1.frequency.linearRampToValueAtTime(800,t+dur*0.8);
-      const f2=c.createBiquadFilter();f2.type='bandpass';f2.Q.value=4;
-      f2.frequency.setValueAtTime(1800,t);f2.frequency.linearRampToValueAtTime(1200,t+dur*0.8);
-      s.connect(f1);s.connect(f2);f1.connect(e);f2.connect(e);
+      s.frequency.linearRampToValueAtTime(peakHz,t+dur*0.35);
+      s.frequency.exponentialRampToValueAtTime(startHz,t+dur*1.2);
+      vg.connect(s.detune);
+      const f1=c.createBiquadFilter();f1.type='bandpass';f1.Q.value=3;// softer (was 6)
+      f1.frequency.setValueAtTime(550,t);f1.frequency.linearRampToValueAtTime(750,t+dur*0.8);
+      const f2=c.createBiquadFilter();f2.type='bandpass';f2.Q.value=1.5;// softer (was 4)
+      f2.frequency.setValueAtTime(1400,t);f2.frequency.linearRampToValueAtTime(1000,t+dur*0.8);
+      s.connect(f1);s.connect(f2);f1.connect(mLP);f2.connect(mLP);
       s.start(t);s.stop(t+dur*2.2);
     });
   }else{
