@@ -2745,18 +2745,26 @@ function synthLucy(c,v,t,dur,hz,vel,acc,slide,step){
   }else if(rid==='chord'){
     // Manvs — hands: chorus-drenched minor chord stabs, Steve Stevens clean guitar character
     const chord=[hz,hz*1.189,hz*1.5];// root, minor third, fifth
-    chord.forEach(n=>{
-      const o1=c.createOscillator();o1.type='triangle';o1.frequency.value=n;o1.detune.value=-6;
-      const o2=c.createOscillator();o2.type='triangle';o2.frequency.value=n;o2.detune.value=6;
-      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.8+Math.random()*0.4;
-      const lg=c.createGain();lg.gain.value=5;lfo.connect(lg);lg.connect(o1.detune);lg.connect(o2.detune);
-      const e=c.createGain();e.gain.setValueAtTime(0,t);
-      e.gain.linearRampToValueAtTime(vel*0.12,t+0.008);
-      e.gain.setTargetAtTime(vel*0.06,t+0.008,dur*0.5);
-      e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
-      o1.connect(e);o2.connect(e);e.connect(o);
+    // Plucked minor chord — punchy attack, warm sustain, clean guitar stab
+    const mix=c.createGain();mix.gain.value=1;
+    const masterLP=c.createBiquadFilter();masterLP.type='lowpass';masterLP.frequency.value=2800;masterLP.Q.value=0.6;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.28,t+0.003);// punchy attack
+    e.gain.setTargetAtTime(vel*0.14,t+0.003,dur*0.3);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
+    mix.connect(masterLP);masterLP.connect(e);e.connect(o);
+    chord.forEach((n,i)=>{
+      const o1=c.createOscillator();o1.type='sawtooth';o1.frequency.value=n;o1.detune.value=-5;
+      const o2=c.createOscillator();o2.type='sawtooth';o2.frequency.value=n;o2.detune.value=5;
+      // Per-note LP sweep: plucked string character
+      const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=2;
+      lp.frequency.setValueAtTime(n*6,t);lp.frequency.exponentialRampToValueAtTime(n*1.5,t+dur*0.4);
+      // Slow chorus drift
+      const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.6+i*0.3;
+      const lg=c.createGain();lg.gain.value=4;lfo.connect(lg);lg.connect(o1.detune);lg.connect(o2.detune);
+      o1.connect(lp);o2.connect(lp);lp.connect(mix);
       o1.start(t);o2.start(t);lfo.start(t);
-      o1.stop(t+dur*2);o2.stop(t+dur*2);lfo.stop(t+dur*2);
+      o1.stop(t+dur*2.1);o2.stop(t+dur*2.1);lfo.stop(t+dur*2.1);
     });
   }else if(rid==='drone'){
     // Vmbra — shadow: the vastness of nothing. Sub-bass drone with beating frequencies
