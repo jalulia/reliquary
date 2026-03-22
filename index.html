@@ -2777,33 +2777,40 @@ function synthLucy(c,v,t,dur,hz,vel,acc,slide,step){
     sub1.start(t);sub2.start(t);sub3.start(t);
     sub1.stop(t+dur*4.1);sub2.stop(t+dur*4.1);sub3.stop(t+dur*4.1);
   }else if(rid==='tremolo'){
-    // Flamma — the longing vocal: reaching up then resolving down, sadly
-    // Detuned saws through vocal formants, pitch bends up minor 3rd then falls
+    // Flamma — Eyes Without a Face: melodic minor pentatonic walk, warm and longing
+    // Each step walks a different note — never the same pitch twice in a row
+    const phrases=[0,3,5,7,10,7,5,3,0,-2,0,3,7,5,3,0];
+    const interval=phrases[step%16];
+    const noteHz=hz*Math.pow(2,interval/12);
+    // Slow swell — the longing quality
     const e=c.createGain();e.gain.setValueAtTime(0,t);
-    e.gain.linearRampToValueAtTime(vel*0.12,t+0.12);
-    e.gain.setTargetAtTime(vel*0.08,t+0.12,dur*0.5);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
+    e.gain.linearRampToValueAtTime(vel*0.14,t+0.08);
+    e.gain.setTargetAtTime(vel*0.09,t+0.08,dur*0.6);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*2.2);
     e.connect(o);
-    // Vibrato LFO — gentle pitch wobble
-    const vib=c.createOscillator();vib.type='sine';vib.frequency.value=5.5;
-    const vg=c.createGain();vg.gain.value=3;// ±3 cents
-    vib.connect(vg);vib.start(t);vib.stop(t+dur*2.2);
-    const startHz=hz;const peakHz=hz*1.189;// minor 3rd
-    // Master LP to keep it warm — the longing resolves softly
-    const mLP=c.createBiquadFilter();mLP.type='lowpass';mLP.frequency.value=2200;mLP.Q.value=0.4;
+    // Gentle vibrato
+    const vib=c.createOscillator();vib.type='sine';vib.frequency.value=5;
+    const vg=c.createGain();vg.gain.value=4;
+    vib.connect(vg);vib.start(t);vib.stop(t+dur*2.3);
+    // Warm LP — vocal lives below 2kHz
+    const mLP=c.createBiquadFilter();mLP.type='lowpass';
+    mLP.frequency.setValueAtTime(1800,t);
+    mLP.frequency.setTargetAtTime(1200,t+dur*0.5,dur*0.5);
+    mLP.Q.value=0.5;
     mLP.connect(e);
-    [-6,0,6].forEach(det=>{// 3 voices (was 5) — less buzz, more clarity
+    // 2 detuned saws — cleaner, less buzzy
+    [-4,4].forEach(det=>{
       const s=c.createOscillator();s.type='sawtooth';s.detune.value=det;
-      s.frequency.setValueAtTime(startHz,t);
-      s.frequency.linearRampToValueAtTime(peakHz,t+dur*0.35);
-      s.frequency.exponentialRampToValueAtTime(startHz,t+dur*1.2);
+      s.frequency.setValueAtTime(noteHz,t);
+      s.frequency.linearRampToValueAtTime(noteHz*1.01,t+dur*0.4);
+      s.frequency.setTargetAtTime(noteHz,t+dur*0.4,dur*0.3);
       vg.connect(s.detune);
-      const f1=c.createBiquadFilter();f1.type='bandpass';f1.Q.value=3;// softer (was 6)
-      f1.frequency.setValueAtTime(550,t);f1.frequency.linearRampToValueAtTime(750,t+dur*0.8);
-      const f2=c.createBiquadFilter();f2.type='bandpass';f2.Q.value=1.5;// softer (was 4)
-      f2.frequency.setValueAtTime(1400,t);f2.frequency.linearRampToValueAtTime(1000,t+dur*0.8);
-      s.connect(f1);s.connect(f2);f1.connect(mLP);f2.connect(mLP);
-      s.start(t);s.stop(t+dur*2.2);
+      // Single warm formant — "oh" vowel
+      const f=c.createBiquadFilter();f.type='bandpass';f.Q.value=2;
+      f.frequency.setValueAtTime(500,t);
+      f.frequency.setTargetAtTime(650,t+dur*0.3,dur*0.4);
+      s.connect(f);f.connect(mLP);
+      s.start(t);s.stop(t+dur*2.3);
     });
   }else{
     makeSolina(c,o,t,hz,vel,dur,null);
@@ -3192,26 +3199,30 @@ function synthSymeon(c,v,t,dur,hz,vel,acc,slide,step){
     e.gain.exponentialRampToValueAtTime(0.001,t+0.09);
     o.connect(bp);bp.connect(e);e.connect(_out(v));o.start(t);o.stop(t+0.1);
   }else if(rid==='stab'){
-    // Manvs — the throwing hand: melodic plucked string with body resonance
-    // Like a hurdy-gurdy drone string struck percussively — pitched, sustaining, warm
-    const o1=c.createOscillator();o1.type='sawtooth';o1.frequency.value=hz;o1.detune.value=-4;
-    const o2=c.createOscillator();o2.type='triangle';o2.frequency.value=hz;o2.detune.value=4;
-    // Body resonance — wooden instrument cavity
-    const body=c.createBiquadFilter();body.type='peaking';body.frequency.value=hz*1.5;body.Q.value=3;body.gain.value=4;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=3;
-    lp.frequency.setValueAtTime(hz*8,t);lp.frequency.exponentialRampToValueAtTime(hz*2,t+dur*0.3);
-    lp.frequency.setTargetAtTime(hz*1.2,t+dur*0.3,dur*0.4);
-    // Gentle vibrato — the string still ringing
+    // Manvs — the stylite's reaching hand: melodic minor phrase, warm and sustained
+    // Walks a Db minor pentatonic per step — each trigger is a different note
+    const walk=[0,3,5,7,10,12,10,7,5,3,0,-2,-5,-2,0,3];
+    const noteHz=hz*Math.pow(2,walk[step%16]/12);
+    const o1=c.createOscillator();o1.type='triangle';o1.frequency.value=noteHz;
+    const o2=c.createOscillator();o2.type='sine';o2.frequency.value=noteHz*2;// octave harmonic
+    const o2g=c.createGain();o2g.gain.value=0.3;o2.connect(o2g);
+    // Warm LP — no bright transient, starts closed and opens gently
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=1.5;
+    lp.frequency.setValueAtTime(noteHz*2,t);
+    lp.frequency.linearRampToValueAtTime(noteHz*4,t+dur*0.3);
+    lp.frequency.setTargetAtTime(noteHz*1.5,t+dur*0.3,dur*0.4);
+    // Vibrato
     const vib=c.createOscillator();vib.type='sine';vib.frequency.value=4.5;
-    const vg=c.createGain();vg.gain.value=3;// subtle +-3 cents
-    vib.connect(vg);vg.connect(o1.detune);vg.connect(o2.detune);
+    const vg=c.createGain();vg.gain.value=4;
+    vib.connect(vg);vg.connect(o1.detune);
+    // Soft attack — no pop
     const e=c.createGain();e.gain.setValueAtTime(0,t);
-    e.gain.linearRampToValueAtTime(vel*0.32,t+0.004);
-    e.gain.setTargetAtTime(vel*0.18,t+0.004,dur*0.35);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
-    o1.connect(body);o2.connect(body);body.connect(lp);lp.connect(e);e.connect(_out(v));
+    e.gain.linearRampToValueAtTime(vel*0.28,t+0.02);// 20ms attack, not 4ms
+    e.gain.setTargetAtTime(vel*0.18,t+0.02,dur*0.4);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.8);
+    o1.connect(lp);o2g.connect(lp);lp.connect(e);e.connect(_out(v));
     o1.start(t);o2.start(t);vib.start(t);
-    o1.stop(t+dur*1.6);o2.stop(t+dur*1.6);vib.stop(t+dur*1.6);
+    o1.stop(t+dur*1.9);o2.stop(t+dur*1.9);vib.stop(t+dur*1.9);
   }else if(rid==='kick'){
     makeSub(c,_out(v),t,hz,vel*1.05,dur);
     makeNoise(c,_out(v),t,vel*0.15,0.025,600,null);
