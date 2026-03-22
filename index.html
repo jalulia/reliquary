@@ -2822,38 +2822,30 @@ function synthJoseph(c,v,t,dur,hz,vel,acc,slide,step){
   // All-synth cumbia sonidera. G minor. The rolling sway, not the driving lock.
   const rid=v.relic.role,o=_out(v);
   if(rid==='bass'){
-    // Synth bass — short, round, doubles the tambora. FM sine with slight saturation
-    const s=c.createOscillator();s.type='sine';s.frequency.value=hz;
-    // Slight pitch bend down for the bounce
-    s.frequency.setValueAtTime(hz*1.015,t);s.frequency.exponentialRampToValueAtTime(hz,t+0.015);
-    const ws=c.createWaveShaper();const curve=new Float32Array(256);
-    for(let i=0;i<256;i++){const x=(i/128)-1;curve[i]=Math.tanh(x*1.3);}ws.curve=curve;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*3;lp.Q.value=1;
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.5,t+0.005);
-    e.gain.setTargetAtTime(vel*0.2,t+0.005,0.15);// fast decay — short and round, not sustaining
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.2);
-    s.connect(ws);ws.connect(lp);lp.connect(e);e.connect(o);
-    s.start(t);s.stop(t+dur*1.3);
-  }else if(rid==='guitar'){
-    // Korg lead synth — bright, detuned dual oscillator, staccato, with delay echo
-    // Short motivic cells, 2-4 notes, minor key. The Grupo Soñador signature.
-    const motif=[0,3,7,10,7,3,0,-2,0,3,5,7,10,7,3,0];// Gm pentatonic fragments
-    const noteHz=hz*2*Math.pow(2,motif[step%16]/12);// octave up for brightness
-    const s1=c.createOscillator();s1.type='sawtooth';s1.frequency.value=noteHz;s1.detune.value=-6;
-    const s2=c.createOscillator();s2.type='sawtooth';s2.frequency.value=noteHz;s2.detune.value=6;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3500;lp.Q.value=1;
-    // Staccato envelope — notes have space around them
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.25,t+0.003);
-    e.gain.setTargetAtTime(vel*0.08,t+0.003,dur*0.2);
+    // Cumbia bass — punchy square-ish with pitch bend. Short, round, bouncy.
+    const s=c.createOscillator();s.type='square';s.frequency.value=hz;
+    s.frequency.setValueAtTime(hz*1.03,t);s.frequency.exponentialRampToValueAtTime(hz,t+0.02);
+    const sub=c.createOscillator();sub.type='sine';sub.frequency.value=hz;// sine sub for weight
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*2.5;lp.Q.value=2;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.45,t+0.004);
+    e.gain.setTargetAtTime(vel*0.15,t+0.004,0.08);// very short decay
     e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.8);
+    s.connect(lp);sub.connect(lp);lp.connect(e);e.connect(o);
+    s.start(t);sub.start(t);s.stop(t+dur);sub.stop(t+dur);
+  }else if(rid==='guitar'){
+    // Korg lead — dry staccato, no delay (delay was leaking nodes and muddying the groove)
+    // Square wave for that classic cheap-keyboard cumbia sound, not saw
+    const motif=[0,3,7,10,7,3,0,-2,0,3,5,7,10,7,3,0];
+    const noteHz=hz*Math.pow(2,motif[step%16]/12);// same octave, not doubled up
+    const s1=c.createOscillator();s1.type='square';s1.frequency.value=noteHz;s1.detune.value=-5;
+    const s2=c.createOscillator();s2.type='square';s2.frequency.value=noteHz;s2.detune.value=5;
+    // LP keeps it warm, not piercing
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800;lp.Q.value=1;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.2,t+0.004);
+    e.gain.setTargetAtTime(vel*0.06,t+0.004,dur*0.15);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.6);// very short — staccato
     s1.connect(lp);s2.connect(lp);lp.connect(e);e.connect(o);
-    s1.start(t);s2.start(t);s1.stop(t+dur);s2.stop(t+dur);
-    // Sonidera echo — quarter-note delay, ghostly repeat
-    const dly=c.createDelay(1.0);dly.delayTime.value=dur*4;// quarter note at 72BPM
-    const fb=c.createGain();fb.gain.value=0.25;
-    const dlp=c.createBiquadFilter();dlp.type='lowpass';dlp.frequency.value=2000;
-    const de=c.createGain();de.gain.value=vel*0.12;
-    lp.connect(dly);dly.connect(dlp);dlp.connect(fb);fb.connect(dly);dly.connect(de);de.connect(o);
+    s1.start(t);s2.start(t);s1.stop(t+dur*0.7);s2.stop(t+dur*0.7);
   }else if(rid==='pad'){
     // Warm minor chord wash — Gm voicing, slow attack, long sustain
     [hz,hz*1.189,hz*1.498].forEach((n,i)=>{
@@ -2922,12 +2914,16 @@ function synthJoseph(c,v,t,dur,hz,vel,acc,slide,step){
     const se=c.createGain();se.gain.setValueAtTime(vel*0.12,t);se.gain.exponentialRampToValueAtTime(0.001,t+0.015);
     src.connect(hp);hp.connect(se);se.connect(o);src.start(t);src.stop(t+0.03);
   }else if(rid==='rhythm'){
-    // Tambora kick — the downbeat anchor. Sine pitch drop 120→40Hz
+    // Tambora — punchy with click transient and sub boom
     const k=c.createOscillator();k.type='sine';
-    k.frequency.setValueAtTime(120,t);k.frequency.exponentialRampToValueAtTime(40,t+0.08);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.6,t+0.003);
-    e.gain.setTargetAtTime(0.001,t+0.003,0.08);
-    k.connect(e);e.connect(o);k.start(t);k.stop(t+0.25);
+    k.frequency.setValueAtTime(140,t);k.frequency.exponentialRampToValueAtTime(45,t+0.06);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.65,t+0.002);
+    e.gain.setTargetAtTime(0.001,t+0.002,0.07);
+    k.connect(e);e.connect(o);k.start(t);k.stop(t+0.2);
+    // Click transient — the stick hitting the drum skin
+    const cl=c.createOscillator();cl.type='square';cl.frequency.value=800;
+    const ce=c.createGain();ce.gain.setValueAtTime(vel*0.1,t);ce.gain.exponentialRampToValueAtTime(0.001,t+0.004);
+    cl.connect(ce);ce.connect(o);cl.start(t);cl.stop(t+0.006);
   }else{
     // Nimbvs modifier — sonidera echo wash
     [hz,hz*1.189,hz*1.498].forEach(n=>{
@@ -2992,13 +2988,14 @@ function synthSeb(c,v,t,dur,hz,vel,acc,slide,step){
 function synthAnth(c,v,t,dur,hz,vel,acc,slide,step){
   const rid=v.relic.role;
   if(rid==='perc'){
-    // Daemon — demonic whispers with delay: sparse, random pitch, echoing in the desert
+    // Daemon — low demonic murmurs with delay, dark and distant
     if(Math.random()>0.15)return;
-    const pf=[1800,2800,4200,1200,3600][Math.floor(Math.random()*5)];
+    const pf=[400,600,900,700,500][Math.floor(Math.random()*5)];// much lower — murmurs not shrieks
     const oo=c.createOscillator();oo.type='sine';
-    oo.frequency.setValueAtTime(pf,t);oo.frequency.exponentialRampToValueAtTime(pf*0.28,t+0.05);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.25,t+0.02);e.gain.exponentialRampToValueAtTime(0.001,t+0.1);
-    oo.connect(e);
+    oo.frequency.setValueAtTime(pf,t);oo.frequency.exponentialRampToValueAtTime(pf*0.5,t+0.08);
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1200;lp.Q.value=0.5;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.18,t+0.03);e.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+    oo.connect(lp);lp.connect(e);
     // Delay — the voices echo across the empty desert
     const dly=c.createDelay(1.0);dly.delayTime.value=STEP_DUR*3;// dotted-eighth feel
     const fb=c.createGain();fb.gain.value=0.35;
