@@ -2818,126 +2818,119 @@ function synthLucy(c,v,t,dur,hz,vel,acc,slide,step){
 }
 
 function synthJoseph(c,v,t,dur,hz,vel,acc,slide,step){
+  // CUMBIA POBLANA — El Paso del Gigante / Grupo Soñador
+  // All-synth cumbia sonidera. G minor. The rolling sway, not the driving lock.
   const rid=v.relic.role,o=_out(v);
   if(rid==='bass'){
-    // Lignum — cumbia bass: bouncy round sine with octave ghost, swaying
-    const s1=c.createOscillator();s1.type='sine';s1.frequency.value=hz;
-    const s2=c.createOscillator();s2.type='sine';s2.frequency.value=hz*2;// octave ghost
-    const s2g=c.createGain();s2g.gain.value=0.3;s2.connect(s2g);
-    // Pitch bend down — the bounce
-    s1.frequency.setValueAtTime(hz*1.02,t);s1.frequency.exponentialRampToValueAtTime(hz,t+0.02);
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*4;lp.Q.value=1.5;
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.48,t+0.004);
-    e.gain.setTargetAtTime(vel*0.3,t+0.004,dur*0.3);
-    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
-    s1.connect(lp);s2g.connect(lp);lp.connect(e);e.connect(o);
-    s1.start(t);s2.start(t);s1.stop(t+dur*1.6);s2.stop(t+dur*1.6);
+    // Synth bass — short, round, doubles the tambora. FM sine with slight saturation
+    const s=c.createOscillator();s.type='sine';s.frequency.value=hz;
+    // Slight pitch bend down for the bounce
+    s.frequency.setValueAtTime(hz*1.015,t);s.frequency.exponentialRampToValueAtTime(hz,t+0.015);
+    const ws=c.createWaveShaper();const curve=new Float32Array(256);
+    for(let i=0;i<256;i++){const x=(i/128)-1;curve[i]=Math.tanh(x*1.3);}ws.curve=curve;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hz*3;lp.Q.value=1;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.5,t+0.005);
+    e.gain.setTargetAtTime(vel*0.2,t+0.005,0.15);// fast decay — short and round, not sustaining
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.2);
+    s.connect(ws);ws.connect(lp);lp.connect(e);e.connect(o);
+    s.start(t);s.stop(t+dur*1.3);
   }else if(rid==='guitar'){
-    // Ala — accordion/melodic: detuned saws through dual formants, cumbia accordion character
-    const accHz=hz*(step%2===0?1:1.335);// alternates root and 4th — cumbia melodic bounce
-    [-8,0,8].forEach(det=>{
-      const osc=c.createOscillator();osc.type='sawtooth';osc.frequency.value=accHz;osc.detune.value=det;
-      // Accordion formants — nasal/reedy character
-      const f1=c.createBiquadFilter();f1.type='bandpass';f1.frequency.value=800;f1.Q.value=3;
-      const f2=c.createBiquadFilter();f2.type='bandpass';f2.frequency.value=1600;f2.Q.value=2;
-      const m1=c.createGain();m1.gain.value=0.6;const m2=c.createGain();m2.gain.value=0.4;
-      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2400;lp.Q.value=0.5;
-      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.18,t+0.004);
-      e.gain.setTargetAtTime(vel*0.1,t+0.004,dur*0.3);
-      e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.3);
-      osc.connect(f1);osc.connect(f2);f1.connect(m1);f2.connect(m2);
-      m1.connect(lp);m2.connect(lp);lp.connect(e);e.connect(o);
-      osc.start(t);osc.stop(t+dur*1.4);
-    });
+    // Korg lead synth — bright, detuned dual oscillator, staccato, with delay echo
+    // Short motivic cells, 2-4 notes, minor key. The Grupo Soñador signature.
+    const motif=[0,3,7,10,7,3,0,-2,0,3,5,7,10,7,3,0];// Gm pentatonic fragments
+    const noteHz=hz*2*Math.pow(2,motif[step%16]/12);// octave up for brightness
+    const s1=c.createOscillator();s1.type='sawtooth';s1.frequency.value=noteHz;s1.detune.value=-6;
+    const s2=c.createOscillator();s2.type='sawtooth';s2.frequency.value=noteHz;s2.detune.value=6;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3500;lp.Q.value=1;
+    // Staccato envelope — notes have space around them
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.25,t+0.003);
+    e.gain.setTargetAtTime(vel*0.08,t+0.003,dur*0.2);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*0.8);
+    s1.connect(lp);s2.connect(lp);lp.connect(e);e.connect(o);
+    s1.start(t);s2.start(t);s1.stop(t+dur);s2.stop(t+dur);
+    // Sonidera echo — quarter-note delay, ghostly repeat
+    const dly=c.createDelay(1.0);dly.delayTime.value=dur*4;// quarter note at 72BPM
+    const fb=c.createGain();fb.gain.value=0.25;
+    const dlp=c.createBiquadFilter();dlp.type='lowpass';dlp.frequency.value=2000;
+    const de=c.createGain();de.gain.value=vel*0.12;
+    lp.connect(dly);dly.connect(dlp);dlp.connect(fb);fb.connect(dly);dly.connect(de);de.connect(o);
   }else if(rid==='pad'){
-    // Avra — warm cumbia organ wash: detuned sines with slow vibrato, church-like
+    // Warm minor chord wash — Gm voicing, slow attack, long sustain
     [hz,hz*1.189,hz*1.498].forEach((n,i)=>{
-      const o1=c.createOscillator();o1.type='sine';o1.frequency.value=n;
-      const o2=c.createOscillator();o2.type='sine';o2.frequency.value=n*2;// octave harmonic
-      const o2g=c.createGain();o2g.gain.value=0.25;o2.connect(o2g);
-      const vib=c.createOscillator();vib.type='sine';vib.frequency.value=4.5+i*0.5;
-      const vg=c.createGain();vg.gain.value=3;vib.connect(vg);vg.connect(o1.detune);
-      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1200;lp.Q.value=0.4;
+      const s=c.createOscillator();s.type='sine';s.frequency.value=n;
+      const s2=c.createOscillator();s2.type='sine';s2.frequency.value=n*2;
+      const s2g=c.createGain();s2g.gain.value=0.2;s2.connect(s2g);
+      const vib=c.createOscillator();vib.type='sine';vib.frequency.value=4+i*0.3;
+      const vg=c.createGain();vg.gain.value=3;vib.connect(vg);vg.connect(s.detune);
+      const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1000;lp.Q.value=0.3;
       const e=c.createGain();e.gain.setValueAtTime(0,t);
-      e.gain.linearRampToValueAtTime(vel*0.14,t+0.15);
-      e.gain.setTargetAtTime(vel*0.09,t+0.15,dur*1.2);
-      e.gain.exponentialRampToValueAtTime(0.001,t+dur*3.5);
-      o1.connect(lp);o2g.connect(lp);lp.connect(e);e.connect(o);
-      o1.start(t);o2.start(t);vib.start(t);
-      o1.stop(t+dur*3.6);o2.stop(t+dur*3.6);vib.stop(t+dur*3.6);
+      e.gain.linearRampToValueAtTime(vel*0.12,t+0.2);
+      e.gain.setTargetAtTime(vel*0.08,t+0.2,dur*1.5);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*4);
+      s.connect(lp);s2g.connect(lp);lp.connect(e);e.connect(o);
+      s.start(t);s2.start(t);vib.start(t);
+      s.stop(t+dur*4.1);s2.stop(t+dur*4.1);vib.stop(t+dur*4.1);
     });
   }else if(rid==='arp'){
-    // Manvs — güira scrape: filtered noise with rhythmic envelope, the scraping percussion
+    // Guacharaca — the skeleton of cumbia. Dry raspy noise scrape, no reverb character
     const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
-    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=2000;
-    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=4000+Math.random()*1000;bp.Q.value=2;
+    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=2500;
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=3500;bp.Q.value=3;
+    // Fast attack, fast decay — dry mechanical scrape
     const e=c.createGain();e.gain.setValueAtTime(0,t);
-    // Short scrape pattern — tch-tch rhythm
-    e.gain.linearRampToValueAtTime(vel*0.2,t+0.002);
-    e.gain.exponentialRampToValueAtTime(vel*0.05,t+0.015);
-    e.gain.linearRampToValueAtTime(vel*0.15,t+0.02);
+    e.gain.linearRampToValueAtTime(vel*0.22,t+0.002);
     e.gain.exponentialRampToValueAtTime(0.001,t+0.04);
     src.connect(hp);hp.connect(bp);bp.connect(e);e.connect(o);src.start(t);src.stop(t+0.06);
   }else if(rid==='shimmer'){
-    // Ocvlvs — maracas/shaker: high filtered noise with sway
-    const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
-    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=6000;
-    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=12000;
-    const e=c.createGain();e.gain.setValueAtTime(vel*0.12,t);
-    e.gain.exponentialRampToValueAtTime(0.001,t+(acc?0.06:0.025));
-    src.connect(hp);hp.connect(lp);lp.connect(e);e.connect(o);
-    src.start(t);src.stop(t+0.08);
+    // Llamador — the soft upbeat tick. High, muted, on beats 2 and 4 only
+    // Small drum that holds space without dominating
+    const s=c.createOscillator();s.type='sine';s.frequency.value=800;
+    const e=c.createGain();e.gain.setValueAtTime(vel*0.15,t);
+    e.gain.exponentialRampToValueAtTime(0.001,t+0.03);
+    s.connect(e);e.connect(o);s.start(t);s.stop(t+0.04);
   }else if(rid==='vocal'){
-    // Vox — ecstatic cry: 3-formant saw with vibrato, sweeping vowels
-    const src=c.createOscillator();src.type='sawtooth';src.frequency.value=humanize(hz,0.008);
-    const vib=c.createOscillator();vib.type='sine';vib.frequency.value=5.2;
-    const vg=c.createGain();vg.gain.value=hz*0.006;
+    // Sonidera shout-out — the DJ's voice echoing over the track
+    const src=c.createOscillator();src.type='sawtooth';src.frequency.value=humanize(hz,0.01);
+    const vib=c.createOscillator();vib.type='sine';vib.frequency.value=5;
+    const vg=c.createGain();vg.gain.value=hz*0.005;
     vib.connect(vg);vg.connect(src.frequency);
-    const f1=c.createBiquadFilter();f1.type='bandpass';f1.Q.value=5;
-    f1.frequency.setValueAtTime(730,t);f1.frequency.setTargetAtTime(500,t,dur*0.4);
-    const f2=c.createBiquadFilter();f2.type='bandpass';f2.Q.value=4;
-    f2.frequency.setValueAtTime(1100,t);f2.frequency.setTargetAtTime(800,t,dur*0.4);
-    const f3=c.createBiquadFilter();f3.type='bandpass';f3.Q.value=3;f3.frequency.value=2400;
-    src.connect(f1);src.connect(f2);src.connect(f3);
-    const m1=c.createGain();m1.gain.value=0.45;
-    const m2=c.createGain();m2.gain.value=0.35;
-    const m3=c.createGain();m3.gain.value=0.2;
-    f1.connect(m1);f2.connect(m2);f3.connect(m3);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.38,t+0.04);
-    e.gain.setTargetAtTime(vel*0.22,t+0.04,dur*0.5);
+    const f1=c.createBiquadFilter();f1.type='bandpass';f1.Q.value=4;
+    f1.frequency.setValueAtTime(700,t);f1.frequency.setTargetAtTime(500,t,dur*0.4);
+    const f2=c.createBiquadFilter();f2.type='bandpass';f2.Q.value=3;
+    f2.frequency.setValueAtTime(1100,t);f2.frequency.setTargetAtTime(800,t,dur*0.5);
+    src.connect(f1);src.connect(f2);
+    const m1=c.createGain();m1.gain.value=0.55;const m2=c.createGain();m2.gain.value=0.45;
+    f1.connect(m1);f2.connect(m2);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.35,t+0.03);
+    e.gain.setTargetAtTime(vel*0.2,t+0.03,dur*0.5);
     e.gain.exponentialRampToValueAtTime(0.001,t+dur*2);
-    m1.connect(e);m2.connect(e);m3.connect(e);e.connect(o);
+    m1.connect(e);m2.connect(e);e.connect(o);
     src.start(t);vib.start(t);src.stop(t+dur*2.1);vib.stop(t+dur*2.1);
   }else if(rid==='texture'){
-    // Tvnica — conga/tumbadora: pitched drum with resonant body, open vs muted per step
-    const isOpen=step%4<2;// open on 1-2, muted on 3-4
-    const congaHz=isOpen?hz*1.5:hz*1.8;// higher pitch for slap
+    // Conga/tumbadora — open tone vs muted slap, syncopated
+    const isOpen=step%4<2;
+    const congaHz=isOpen?hz*1.5:hz*1.8;
     const drum=c.createOscillator();drum.type='sine';
     drum.frequency.setValueAtTime(congaHz,t);drum.frequency.exponentialRampToValueAtTime(congaHz*0.6,t+0.04);
     const body=c.createBiquadFilter();body.type='peaking';body.frequency.value=congaHz;body.Q.value=4;body.gain.value=5;
     const e=c.createGain();e.gain.setValueAtTime(0,t);
     e.gain.linearRampToValueAtTime(vel*0.35,t+0.002);
-    e.gain.setTargetAtTime(0.001,t+0.002,isOpen?0.08:0.03);// open rings, muted dies fast
+    e.gain.setTargetAtTime(0.001,t+0.002,isOpen?0.08:0.03);
     drum.connect(body);body.connect(e);e.connect(o);drum.start(t);drum.stop(t+0.2);
-    // Skin slap transient
     const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
     const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=1200;
     const se=c.createGain();se.gain.setValueAtTime(vel*0.12,t);se.gain.exponentialRampToValueAtTime(0.001,t+0.015);
     src.connect(hp);hp.connect(se);se.connect(o);src.start(t);src.stop(t+0.03);
   }else if(rid==='rhythm'){
-    // Cor — cumbia kick: round, bouncy, swaying — the heartbeat of the dance
+    // Tambora kick — the downbeat anchor. Sine pitch drop 120→40Hz
     const k=c.createOscillator();k.type='sine';
-    k.frequency.setValueAtTime(hz*0.6,t);k.frequency.exponentialRampToValueAtTime(hz*0.25,t+0.05);
-    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.5,t+0.003);
-    e.gain.setTargetAtTime(0.001,t+0.003,0.1);
-    k.connect(e);e.connect(o);k.start(t);k.stop(t+0.3);
-    // Sub weight — the floor vibrating
-    const sub=c.createOscillator();sub.type='sine';sub.frequency.value=hz*0.25;
-    const se=c.createGain();se.gain.setValueAtTime(vel*0.2,t);se.gain.exponentialRampToValueAtTime(0.001,t+0.08);
-    sub.connect(se);se.connect(o);sub.start(t);sub.stop(t+0.1);
+    k.frequency.setValueAtTime(120,t);k.frequency.exponentialRampToValueAtTime(40,t+0.08);
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.6,t+0.003);
+    e.gain.setTargetAtTime(0.001,t+0.003,0.08);
+    k.connect(e);e.connect(o);k.start(t);k.stop(t+0.25);
   }else{
-    // Nimbvs modifier fallback — formant-filtered saw chord, not a bare sine
-    [hz,hz*1.26,hz*1.5].forEach(n=>{
+    // Nimbvs modifier — sonidera echo wash
+    [hz,hz*1.189,hz*1.498].forEach(n=>{
       const s=c.createOscillator();s.type='sawtooth';s.frequency.value=n;
       const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=800;bp.Q.value=3;
       const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.1,t+0.1);
@@ -3583,23 +3576,23 @@ const PATTERNS={
     flamma_l:  [null,null,null,null,null,null,null,null,null,null,s('Eb',7,.32),null,null,null,null,null],
   },
   joseph:{
-    // Cumbia groove: bouncing 2-beat feel (tum-PA tum-PA)
-    // Accordion — swaying melodic line, root and 4th alternating with ornaments
-    ala:       [s('A',0,.7),null,s('A',2,.55),null,null,s('A',4,.65),null,s('A',2,.5),s('A',0,.68),null,s('A',5,.55),null,null,s('A',4,.62),null,s('A',2,.48)],
-    // Pad — hits on beat 1 and 3, long sustain, the warm organ wash
-    avra:      [s('A',0,.72),null,null,null,null,null,null,null,s('A',0,.7),null,null,null,null,null,null,null],
-    // Bass — cumbia tumbao: 1, and-of-2, 3, and-of-4 (bouncy)
-    pes_j:     [sb('A',0,.82),null,null,null,null,null,sb('A',0,.72),null,sb('A',0,.8),null,null,null,null,null,sb('A',0,.7),null],
-    // Cumbia kick — on beats 1 and 3 (quarter notes)
-    cor_j:     [s('A',0,.65),null,null,null,null,null,null,null,s('A',0,.62),null,null,null,null,null,null,null],
-    // Güira — constant offbeat scraping, the heartbeat of cumbia
-    manvs_j:   [null,s('A',0,.5),null,s('A',0,.45),null,s('A',0,.52),null,s('A',0,.45),null,s('A',0,.5),null,s('A',0,.45),null,s('A',0,.52),null,s('A',0,.45)],
-    // Maracas — steady 8ths, accented on offbeats
-    ocvlvs_j:  [s('A',0,.35),null,s('A',0,.5),null,s('A',0,.35),null,s('A',0,.5),null,s('A',0,.35),null,s('A',0,.5),null,s('A',0,.35),null,s('A',0,.5),null],
-    // Vocal — sparse, ecstatic, on the pickup before beat 3
-    vox_j:     [null,null,null,null,null,null,null,s('A',2,.55),null,null,null,null,null,null,null,s('A',5,.52)],
-    // Conga — syncopated: open on 2+4, muted slaps between
-    tvnica:    [null,null,null,null,{hz:K.A[0],v:.6},null,{hz:K.A[0],v:.45},null,null,null,null,null,{hz:K.A[0],v:.6},null,{hz:K.A[0],v:.45},null],
+    // CUMBIA POBLANA — El Paso del Gigante groove
+    // Korg lead — staccato minor pentatonic motifs, the Grupo Soñador signature
+    ala:       [s('A',0,.7),null,null,s('A',3,.6),null,null,null,null,s('A',0,.68),null,s('A',5,.55),null,null,null,null,null],
+    // Pad — long Gm chord wash, beat 1 only
+    avra:      [s('A',0,.7),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+    // Bass — doubles tambora: beat 1, and-of-2, beat 3 (the cumbia roll)
+    pes_j:     [sb('A',0,.82),null,null,null,null,null,sb('A',0,.7),null,sb('A',0,.78),null,null,null,null,null,null,null],
+    // Tambora kick — beat 1, and-of-2 (step 6), beat 3 (step 8)
+    cor_j:     [s('A',0,.7),null,null,null,null,null,s('A',0,.6),null,s('A',0,.68),null,null,null,null,null,null,null],
+    // Guacharaca — chu-chucu-chu: X.XX.X.X|X.XX.X.X (the skeleton)
+    manvs_j:   [s('A',0,.55),null,s('A',0,.5),s('A',0,.48),null,s('A',0,.52),null,s('A',0,.48),s('A',0,.55),null,s('A',0,.5),s('A',0,.48),null,s('A',0,.52),null,s('A',0,.48)],
+    // Llamador — soft tick on beats 2 and 4 only (steps 4 and 12)
+    ocvlvs_j:  [null,null,null,null,s('A',0,.4),null,null,null,null,null,null,null,s('A',0,.4),null,null,null],
+    // Vocal — sparse sonidera shout, once per bar
+    vox_j:     [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,s('A',2,.5)],
+    // Conga — syncopated open/muted: open on and-of-1, and-of-3; muted fills
+    tvnica:    [null,null,{hz:K.A[0],v:.55},null,null,null,null,{hz:K.A[0],v:.45},null,null,{hz:K.A[0],v:.55},null,null,null,null,{hz:K.A[0],v:.45}],
   },
   sebastian:{
     sagittae:  [{hz:K.C[0],v:.48},null,{hz:K.C[0],v:.42},null,null,{hz:K.C[0],v:.48},null,{hz:K.C[0],v:.36},{hz:K.C[0],v:.5},null,{hz:K.C[0],v:.42},null,null,{hz:K.C[0],v:.48},null,{hz:K.C[0],v:.38}],
