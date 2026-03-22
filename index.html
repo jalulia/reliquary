@@ -2992,12 +2992,21 @@ function synthSeb(c,v,t,dur,hz,vel,acc,slide,step){
 function synthAnth(c,v,t,dur,hz,vel,acc,slide,step){
   const rid=v.relic.role;
   if(rid==='perc'){
+    // Daemon — demonic whispers with delay: sparse, random pitch, echoing in the desert
     if(Math.random()>0.15)return;
     const pf=[1800,2800,4200,1200,3600][Math.floor(Math.random()*5)];
-    const o=c.createOscillator();o.type='sine';
-    o.frequency.setValueAtTime(pf,t);o.frequency.exponentialRampToValueAtTime(pf*0.28,t+0.05);
+    const oo=c.createOscillator();oo.type='sine';
+    oo.frequency.setValueAtTime(pf,t);oo.frequency.exponentialRampToValueAtTime(pf*0.28,t+0.05);
     const e=c.createGain();e.gain.setValueAtTime(vel*0.3,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.07);
-    o.connect(e);e.connect(_out(v));o.start(t);o.stop(t+0.08);
+    oo.connect(e);
+    // Delay — the voices echo across the empty desert
+    const dly=c.createDelay(1.0);dly.delayTime.value=STEP_DUR*3;// dotted-eighth feel
+    const fb=c.createGain();fb.gain.value=0.35;
+    const dlp=c.createBiquadFilter();dlp.type='lowpass';dlp.frequency.value=1500;// each echo darker
+    const de=c.createGain();de.gain.value=vel*0.18;
+    e.connect(_out(v));// dry signal
+    e.connect(dly);dly.connect(dlp);dlp.connect(fb);fb.connect(dly);dly.connect(de);de.connect(_out(v));
+    oo.start(t);oo.stop(t+0.08);
   }else if(rid==='pad'){
     const car=c.createOscillator();car.type='sine';car.frequency.value=hz;
     const mod=c.createOscillator();mod.type='sine';mod.frequency.value=hz*1.414;
