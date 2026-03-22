@@ -3578,14 +3578,23 @@ const PATTERNS={
     flamma_l:  [null,null,null,null,null,null,null,null,null,null,s('Eb',7,.32),null,null,null,null,null],
   },
   joseph:{
-    ala:       [s('A',0,.68),null,null,s('A',0,.63),null,s('A',4,.62),null,null,s('A',3,.62),null,null,s('A',0,.58),null,null,null,null],
-    avra:      [s('A',0,.7),null,null,null,null,null,null,s('A',0,.7),null,null,null,null,null,null,null,null],
-    pes_j:     [null,sb('A',0,.78),null,null,null,sb('A',0,.72),null,null,null,sb('A',0,.72),null,null,null,sb('A',0,.78),null,null],
-    cor_j:     [s('A',0,.52),null,null,null,null,s('A',0,.48),null,null,s('A',0,.52),null,null,null,null,s('A',0,.48),null,null],
-    manvs_j:   [s('A',0,.58),null,s('A',2,.54),null,s('A',4,.54),null,s('A',6,.5),null,s('A',0,.58),null,s('A',2,.54),null,s('A',4,.54),null,s('A',6,.48),null],
-    ocvlvs_j:  [s('A',7,.6),null,null,null,null,null,null,null,s('A',7,.6),null,null,null,null,null,null,null],
-    vox_j:     [null,null,null,s('A',2,.42),null,null,null,s('A',4,.52),null,null,null,s('A',5,.48),null,null,null,s('A',7,.55)],
-    tvnica:    [{hz:K.A[0],v:.5},null,null,null,{hz:K.A[0],v:.5},null,null,null,{hz:K.A[0],v:.5},null,null,null,{hz:K.A[0],v:.5},null,null,null],
+    // Cumbia groove: bouncing 2-beat feel (tum-PA tum-PA)
+    // Accordion — swaying melodic line, root and 4th alternating with ornaments
+    ala:       [s('A',0,.7),null,s('A',2,.55),null,null,s('A',4,.65),null,s('A',2,.5),s('A',0,.68),null,s('A',5,.55),null,null,s('A',4,.62),null,s('A',2,.48)],
+    // Pad — hits on beat 1 and 3, long sustain, the warm organ wash
+    avra:      [s('A',0,.72),null,null,null,null,null,null,null,s('A',0,.7),null,null,null,null,null,null,null],
+    // Bass — cumbia tumbao: 1, and-of-2, 3, and-of-4 (bouncy)
+    pes_j:     [sb('A',0,.82),null,null,null,null,null,sb('A',0,.72),null,sb('A',0,.8),null,null,null,null,null,sb('A',0,.7),null],
+    // Cumbia kick — on beats 1 and 3 (quarter notes)
+    cor_j:     [s('A',0,.65),null,null,null,null,null,null,null,s('A',0,.62),null,null,null,null,null,null,null],
+    // Güira — constant offbeat scraping, the heartbeat of cumbia
+    manvs_j:   [null,s('A',0,.5),null,s('A',0,.45),null,s('A',0,.52),null,s('A',0,.45),null,s('A',0,.5),null,s('A',0,.45),null,s('A',0,.52),null,s('A',0,.45)],
+    // Maracas — steady 8ths, accented on offbeats
+    ocvlvs_j:  [s('A',0,.35),null,s('A',0,.5),null,s('A',0,.35),null,s('A',0,.5),null,s('A',0,.35),null,s('A',0,.5),null,s('A',0,.35),null,s('A',0,.5),null],
+    // Vocal — sparse, ecstatic, on the pickup before beat 3
+    vox_j:     [null,null,null,null,null,null,null,s('A',2,.55),null,null,null,null,null,null,null,s('A',5,.52)],
+    // Conga — syncopated: open on 2+4, muted slaps between
+    tvnica:    [null,null,null,null,{hz:K.A[0],v:.6},null,{hz:K.A[0],v:.45},null,null,null,null,null,{hz:K.A[0],v:.6},null,{hz:K.A[0],v:.45},null],
   },
   sebastian:{
     sagittae:  [{hz:K.C[0],v:.48},null,{hz:K.C[0],v:.42},null,null,{hz:K.C[0],v:.48},null,{hz:K.C[0],v:.36},{hz:K.C[0],v:.5},null,{hz:K.C[0],v:.42},null,null,{hz:K.C[0],v:.48},null,{hz:K.C[0],v:.38}],
