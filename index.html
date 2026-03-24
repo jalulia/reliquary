@@ -3713,8 +3713,8 @@ const PATTERNS={
     // Hijaz scale degrees: 0=F#, 1=G(b2), 2=Bb(3), 3=B(4), 4=C#(5), 5=D(b6), 6=E(b7)
     // Artillery kick on 1,5,9,13 (four-on-floor with weight)
     tonitruum: [s('F#',0,.95),null,null,null,s('F#',0,.9),null,null,null,s('F#',0,.92),null,null,null,s('F#',0,.88),null,null,null],
-    // Darbuka: doum(0)-tek(4)-ka(6)-tek(8)-ka(10)-tek(12)-ka(14) — classic pattern
-    darbuka:   [s('F#',0,.7),null,null,null,s('F#',3,.5),null,s('F#',4,.4),null,s('F#',3,.55),null,s('F#',4,.38),null,s('F#',3,.5),null,s('F#',4,.4),null],
+    // Darbuka: Ayoub trance pattern — D.D..T..D.D..T. (hypnotic 2-beat)
+    darbuka:   [s('F#',0,.7),s('F#',4,.35),null,s('F#',0,.6),null,s('F#',4,.35),s('F#',3,.55),null,s('F#',0,.65),s('F#',4,.35),null,s('F#',0,.6),null,s('F#',4,.35),s('F#',3,.5),null],
     // Acid maqam: hypnotic Hijaz line, ascending then falling
     maqam:     [s('F#',0,.6),null,s('F#',1,.55),null,s('F#',2,.65,1),null,s('F#',3,.5),null,null,s('F#',2,.6),null,s('F#',1,.55),s('F#',0,.5),null,null,null],
     // Tower drone: sub bass on every other downbeat
@@ -3787,11 +3787,17 @@ function synthBarbara(c,v,t,dur,hz,vel,acc,slide,step){
     // Uses persistent oscillator like Vitus acid, but locked to Hijaz scale
     const acidO=v._acidOsc||(()=>{const oo=c.createOscillator();oo.type='sawtooth';return oo;})();
     if(!v._acidOsc){
-      const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=22;// MS-20 resonance — extreme
+      // MS-20 signal chain: HPF → asymmetric saturation → LPF → output
+      const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=200;hp.Q.value=8;
+      const ws=c.createWaveShaper();const curve=new Float32Array(512);
+      for(let i=0;i<512;i++){const x=(i/256)-1;
+        curve[i]=x>=0?Math.tanh(x*2.5):Math.tanh(x*3.5);}// asymmetric — MS-20 character
+      ws.curve=curve;ws.oversample='2x';
+      const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=22;// MS-20 resonance
       const e=c.createGain();
-      acidO.connect(lp);lp.connect(e);e.connect(o);
+      acidO.connect(hp);hp.connect(ws);ws.connect(lp);lp.connect(e);e.connect(o);
       acidO.start(t);
-      v._acidOsc=acidO;v._acidLp=lp;v._acidGain=e;
+      v._acidOsc=acidO;v._acidLp=lp;v._acidGain=e;v._acidHp=hp;
     }
     const lp=v._acidLp,e=v._acidGain;
     const decayT=acc?0.3:0.16;
@@ -4520,7 +4526,9 @@ const SAINT_ICONS=[
   // Paprika — butterfly/dream
   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M8,3 L8,13"/><path d="M8,5 Q3,2 2,6 Q1,10 6,9 Q8,8 8,5"/><path d="M8,5 Q13,2 14,6 Q15,10 10,9 Q8,8 8,5"/><circle cx="8" cy="3" r="1" fill="currentColor"/></svg>',
   // Robin — bow and arrow
-  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4,2 Q2,8 4,14"/><line x1="4" y1="2" x2="4" y2="14"/><line x1="4" y1="8" x2="14" y2="8"/><path d="M12,6 L14,8 L12,10"/></svg>'
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4,2 Q2,8 4,14"/><line x1="4" y1="2" x2="4" y2="14"/><line x1="4" y1="8" x2="14" y2="8"/><path d="M12,6 L14,8 L12,10"/></svg>',
+  // Barbara — lightning bolt + tower
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="5" y="6" width="6" height="8" rx=".5"/><path d="M5,6 L5,4 Q8,2 11,4 L11,6"/><path d="M9,1 L7,6 L9,6 L6,11" stroke-width="1.5"/></svg>'
 ];
 // ══════ UI: SAINT ACCORDION ══════
 // ══════ SAINT SILHOUETTES — per-saint SVGs for body-mapped relic layout ══════
