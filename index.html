@@ -362,6 +362,38 @@ color:rgba(218,165,32,.35);transition:color .3s;white-space:nowrap;text-align:ce
 .votive.active .votive-icon{stroke:rgba(218,165,32,1);filter:drop-shadow(0 0 3px rgba(218,165,32,.3))}
 .votive.active .votive-name{color:rgba(218,165,32,.8);font-weight:400}
 @keyframes votivePulse{0%,100%{opacity:.9}50%{opacity:1}}
+/* About bar + modal */
+#about-bar{position:absolute;bottom:0;left:0;right:0;padding:6px 12px;
+display:flex;align-items:center;justify-content:center;
+background:linear-gradient(to top,rgba(0,0,0,.4),transparent);
+border-top:1px solid var(--w05);cursor:pointer;z-index:3}
+#about-bar span{font-family:'IBM Plex Mono',monospace;font-size:7px;letter-spacing:.15em;
+text-transform:uppercase;color:var(--w20);transition:color .3s}
+#about-bar:hover span{color:var(--w40)}
+#about-modal{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;
+background:rgba(0,0,0,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#about-modal.open{display:flex}
+#about-content{max-width:520px;width:90%;max-height:80vh;overflow-y:auto;
+padding:2.5em 2em;position:relative;
+background:rgba(20,20,20,.95);border:1px solid var(--w10);border-radius:4px;
+font-family:'Instrument Serif',serif}
+#about-content h2{font-family:'Pirata One',cursive;font-size:1.6rem;color:var(--w80);
+margin:0 0 .3em;letter-spacing:.04em}
+#about-content .sub{font-style:italic;color:var(--w40);font-size:.85rem;margin-bottom:1.5em;
+border-bottom:1px solid var(--w10);padding-bottom:1em}
+#about-content p{font-family:'IBM Plex Mono',monospace;font-size:.7rem;line-height:1.7;
+color:var(--w50);margin-bottom:1em;font-weight:300}
+#about-content strong{color:var(--w70);font-weight:500}
+#about-content .how-to{margin-top:1.2em;padding-top:1.2em;border-top:1px solid var(--w10)}
+#about-content .how-to h3{font-family:'Pirata One',cursive;font-size:1.1rem;color:var(--w60);
+margin-bottom:.6em}
+#about-content .step{display:flex;gap:.6em;margin-bottom:.6em;align-items:flex-start}
+#about-content .step-num{font-family:'Pirata One',cursive;font-size:1rem;color:var(--w30);
+min-width:1.2em;text-align:center}
+#about-content .step p{margin:0}
+#about-close{position:absolute;top:12px;right:14px;background:none;border:none;
+color:var(--w30);font-size:1.2rem;cursor:pointer;padding:4px 8px;transition:color .2s}
+#about-close:hover{color:var(--w60)}
 #locus-label{position:absolute;bottom:1%;left:50%;transform:translateX(-50%);
 font-family:'Instrument Serif',serif;font-style:italic;font-size:.45rem;
 color:rgba(218,165,32,0);letter-spacing:.1em;text-align:center;transition:color 2s ease;
@@ -530,6 +562,29 @@ clip-path:polygon(0% 12%,5% 5%,15% 1%,50% 0%,85% 1%,95% 5%,100% 12%,100% 100%,0%
     </div>
     <div id="relic-cabinet-wrap">
       <div id="relic-cabinet"></div>
+    </div>
+    <div id="about-bar" onclick="document.getElementById('about-modal').classList.add('open')">
+      <span>About this reliquary</span>
+    </div>
+  </div>
+
+  <!-- About modal -->
+  <div id="about-modal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div id="about-content">
+      <button id="about-close" onclick="document.getElementById('about-modal').classList.remove('open')">&times;</button>
+      <h2>Holy Ops</h2>
+      <div class="sub">A Sonic Reliquary</div>
+      <p>In the medieval world, reliquaries were ornate vessels that housed the sacred remains of saints. Each bone, each fragment of cloth, each vial of blood was believed to carry the living presence of the holy dead.</p>
+      <p><strong>Holy Ops</strong> is a reliquary for sound. Thirteen saints, each carrying nine relics. Each relic is a voice &mdash; a synthesized instrument shaped by the saint's martyrdom, their genre, their sonic DNA. Place relics onto the vestmented figure to compose layered arrangements that evolve, breathe, and collide.</p>
+      <p>A Bartholomew kick drum with a Lucy pad. A Vitus acid line under a Joseph cumbia bass. A Barbara cannon over a Robin whistle. The collisions are the instrument.</p>
+      <div class="how-to">
+        <h3>How to Play</h3>
+        <div class="step"><span class="step-num">I</span><p><strong>Choose a saint</strong> from the tabs above. Each has a unique key and sonic identity.</p></div>
+        <div class="step"><span class="step-num">II</span><p><strong>Drag relics</strong> from the catalogue onto the nine anatomical slots on the saint's body. On mobile, tap a relic then tap a slot.</p></div>
+        <div class="step"><span class="step-num">III</span><p><strong>Mix saints freely.</strong> Place relics from different saints to create cross-genre combinations. There are no wrong answers.</p></div>
+        <div class="step"><span class="step-num">IV</span><p><strong>Toggle votives</strong> along the bottom to add ambient layers &mdash; bells, candles, incense, holy water.</p></div>
+        <div class="step"><span class="step-num">V</span><p><strong>Click a placed relic</strong> to remove it. Drag between slots to rearrange.</p></div>
+      </div>
     </div>
   </div>
   <div id="reliquary-panel">
