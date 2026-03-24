@@ -1876,6 +1876,16 @@ const SAINTS=[
 {id:'clamor',name:'Clamor',desc:'Outlaw shout — formant bark',type:'generator',role:'shout'},
 {id:'saltus',name:'Saltus',desc:'The leap — bouncing syncopated pulse',type:'generator',role:'bounce'},
 {id:'fur',name:'Fvr',desc:'Thief — steals the reverb, dries out the room',type:'modifier',role:'modifier'}]}
+,{id:'barbara',name:'Barbara',key:'F#',freq:185.00,color:'#FFD700',vibe:'Struck by lightning',vibeTag:'maqam',imgIdx:12,relics:[
+{id:'tonitruum',name:'Tonitrvvm',desc:'909 cannon kick — distorted sine sweep, artillery impact',type:'generator',role:'kick'},
+{id:'darbuka',name:'Darbvka',desc:'Doum-tek-ka — darbuka pattern, body and rim hits',type:'generator',role:'darbuka'},
+{id:'maqam',name:'Maqam',desc:'Hijaz acid line — MS-20 squelch locked to Arabic scale',type:'generator',role:'acid'},
+{id:'turris',name:'Tvrris',desc:'Tower drone — sub bass from the stone prison',type:'generator',role:'drone'},
+{id:'fulmen',name:'Fvlmen',desc:'Lightning crackle — white noise burst on downbeat',type:'clock',role:'lightning'},
+{id:'sagitta_b',name:'Sagitta',desc:'Darbuka fill — rapid-fire rim shots',type:'generator',role:'fill'},
+{id:'catena_b',name:'Catena',desc:'Chain rattle — metallic resonant tremolo',type:'generator',role:'chain'},
+{id:'ignis_b',name:'Ignis',desc:'Flame sweep — rising bandpass scream',type:'generator',role:'sweep'},
+{id:'quantizer',name:'Qvantisor',desc:'Pitch quantizer — forces all voices into Hijaz scale',type:'modifier',role:'modifier'}]}
 ];
 
 const SLOT_POS=[
@@ -1912,6 +1922,7 @@ const SAINT_LFO_RATIOS={
   symeon:     {num:9,den:8,ampDepth:0.14,detuneDepth:7,filterRange:500},// 53s — drunken near-unison
   paprika:    {num:7,den:6,ampDepth:0.12,detuneDepth:5,filterRange:600},// 51s — dream drift
   robin:      {num:8,den:5,ampDepth:0.06,filterRange:150},
+  barbara:    {num:7,den:3,ampDepth:0.04,filterRange:200},// fast, aggressive breathing
 };
 const SAINT_LFOS={};// Runtime: {lfo, ampGain, detuneGain, refCount, startTime}
 // Role → filter config for per-voice timbral modulation
@@ -1930,6 +1941,14 @@ const LFO_FILTER_MAP={
   stomp:{type:'lowpass',freq:300,Q:0.8},clap:{type:'bandpass',freq:1500,Q:1.0},
   lute:{type:'bandpass',freq:1200,Q:1.2},shout:{type:'bandpass',freq:1000,Q:1.5},
   bounce:{type:'lowpass',freq:600,Q:1.0},
+  // Barbara roles
+  darbuka:{type:'highpass',freq:800,Q:1.5},
+  acid:{type:'lowpass',freq:2000,Q:3},
+  drone:{type:'lowpass',freq:300,Q:2},
+  lightning:{type:'highpass',freq:2000,Q:1},
+  fill:{type:'highpass',freq:3000,Q:2},
+  chain:{type:'bandpass',freq:1500,Q:2},
+  sweep:{type:'bandpass',freq:1000,Q:4},
   // Roles that don't get a filter
   modifier:null,phaser:null,tremolo:null,
 };
@@ -2040,6 +2059,14 @@ const MODIFIERS={
   viscera:{apply(t){AC.sharedFilter.Q.setTargetAtTime(3.5,t,0.2);},remove(t){AC.sharedFilter.Q.setTargetAtTime(0.7,t,0.3);}},
   morpheus:{apply(t){AC.reverbWet.gain.setTargetAtTime(0.6,t,0.3);AC.masterLPF.frequency.setTargetAtTime(12000,t,0.5);},remove(t){}},
   fur:{apply(t){AC.reverbWet.gain.setTargetAtTime(0.05,t,0.2);},remove(t){/* restored by updateDensity */}},
+  quantizer:{apply(t){
+    // Lightning quantizer: push master filter into aggressive resonance + distortion
+    AC.sharedFilter.Q.setTargetAtTime(5,t,0.2);
+    AC.sharedFilter.frequency.setTargetAtTime(3000,t,0.3);
+    // Overdrive the compressor for pumping sidechain feel
+    AC.comp.ratio.setTargetAtTime(6,t,0.3);AC.comp.threshold.setTargetAtTime(-24,t,0.2);
+  },remove(t){AC.sharedFilter.Q.setTargetAtTime(0.7,t,0.5);AC.sharedFilter.frequency.setTargetAtTime(6000,t,0.3);
+    AC.comp.ratio.setTargetAtTime(2,t,0.3);AC.comp.threshold.setTargetAtTime(-18,t,0.3);}},
 };
 
 function applyModifiers(){
@@ -3516,6 +3543,8 @@ const K={
   Db:[138.59,155.56,174.61,185.00,207.65,233.08,261.63,277.18,311.13,349.23],
   Am:[220.00,246.94,261.63,293.66,329.63,349.23,392.00,440.00,493.88,523.25],
   B: [246.94,277.18,311.13,329.63,369.99,415.30,466.16,493.88,554.37,622.25],
+  // F# Hijaz (microtonal): F# G(b2) Bb(3) B(4) C#(5) D(b6) E(b7) — Arabic tuning
+  'F#':[185.00,194.18,235.47,246.94,277.18,293.66,329.63,370.00,388.36,470.94],
 };
 function s(key,deg,vel,acc,slide){return{hz:K[key][deg]||K[key][0],v:vel||0.75,acc:!!acc,slide:!!slide};}
 function sb(key,deg,vel,acc,slide){return{hz:(K[key][deg]||K[key][0])*0.5,v:vel||0.75,acc:!!acc,slide:!!slide};}
@@ -3679,7 +3708,166 @@ const PATTERNS={
     // Bounce — syncopated pulse
     saltus:    [s('B',0,.5),null,null,s('B',0,.45),null,s('B',0,.5),null,null,s('B',0,.48),null,null,s('B',0,.45),null,s('B',0,.5),null,null],
   },
+  // ══════ BARBARA — The Levantine Artillery (Acid Maqam) ══════
+  barbara:{
+    // Hijaz scale degrees: 0=F#, 1=G(b2), 2=Bb(3), 3=B(4), 4=C#(5), 5=D(b6), 6=E(b7)
+    // Artillery kick on 1,5,9,13 (four-on-floor with weight)
+    tonitruum: [s('F#',0,.95),null,null,null,s('F#',0,.9),null,null,null,s('F#',0,.92),null,null,null,s('F#',0,.88),null,null,null],
+    // Darbuka: doum(0)-tek(4)-ka(6)-tek(8)-ka(10)-tek(12)-ka(14) — classic pattern
+    darbuka:   [s('F#',0,.7),null,null,null,s('F#',3,.5),null,s('F#',4,.4),null,s('F#',3,.55),null,s('F#',4,.38),null,s('F#',3,.5),null,s('F#',4,.4),null],
+    // Acid maqam: hypnotic Hijaz line, ascending then falling
+    maqam:     [s('F#',0,.6),null,s('F#',1,.55),null,s('F#',2,.65,1),null,s('F#',3,.5),null,null,s('F#',2,.6),null,s('F#',1,.55),s('F#',0,.5),null,null,null],
+    // Tower drone: sub bass on every other downbeat
+    turris:    [s('F#',0,.6),null,null,null,null,null,null,null,s('F#',0,.55),null,null,null,null,null,null,null],
+    // Lightning: white noise crackle on downbeats
+    fulmen:    [s('F#',0,.8),null,null,null,null,null,null,null,s('F#',0,.7),null,null,null,null,null,null,null],
+    // Fill: rapid darbuka rim shots, offbeat 16ths
+    sagitta_b: [null,s('F#',4,.35),null,s('F#',4,.3),null,null,s('F#',4,.38),s('F#',4,.3),null,s('F#',4,.35),null,s('F#',4,.3),null,null,s('F#',4,.38),s('F#',4,.3)],
+    // Chain: metallic accents on beat 2 and 4
+    catena_b:  [null,null,null,null,s('F#',5,.45),null,null,null,null,null,null,null,s('F#',5,.42),null,null,null],
+    // Sweep: rising scream once per 2 bars (sparse)
+    ignis_b:   [s('F#',0,.55),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+  },
 };
+
+// ══════ SAINT BARBARA SYNTHESIS — Acid Maqam / Levantine Artillery ══════
+// Hijaz scale from F# with microtonal inflections
+const HIJAZ_SCALE=[185.00,194.18,235.47,246.94,277.18,293.66,329.63];// F# Hijaz
+function synthBarbara(c,v,t,dur,hz,vel,acc,slide,step){
+  const o=_out(v),rid=v.relic.role;
+  if(rid==='kick'){
+    // Tonitruum — 909 artillery cannon: heavily distorted sine sweep with sub layer
+    // The canonical 909 kick: sine from ~250Hz down to ~45Hz, with a sharp transient click
+    const k=c.createOscillator();k.type='sine';
+    k.frequency.setValueAtTime(250,t);k.frequency.exponentialRampToValueAtTime(42,t+0.04);
+    // Waveshaper for overdriven distortion — the artillery crunch
+    const ws=c.createWaveShaper();const curve=new Float32Array(512);
+    for(let i=0;i<512;i++){const x=(i/256)-1;curve[i]=Math.tanh(x*4)*0.8+Math.tanh(x*12)*0.2;}
+    ws.curve=curve;ws.oversample='4x';
+    // Sub layer — the cannon's room-shaking low end
+    const sub=c.createOscillator();sub.type='sine';sub.frequency.value=42;
+    const subE=c.createGain();subE.gain.setValueAtTime(0,t);subE.gain.linearRampToValueAtTime(vel*0.4,t+0.01);
+    subE.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+    sub.connect(subE);subE.connect(o);
+    // Click transient — the impact
+    const cl=c.createOscillator();cl.type='square';cl.frequency.value=2000;
+    const clE=c.createGain();clE.gain.setValueAtTime(vel*0.15,t);clE.gain.exponentialRampToValueAtTime(0.001,t+0.004);
+    cl.connect(clE);clE.connect(o);
+    // Main kick envelope
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.75,t+0.001);
+    e.gain.setTargetAtTime(0.001,t+0.001,0.09);
+    k.connect(ws);ws.connect(e);e.connect(o);
+    k.start(t);sub.start(t);cl.start(t);k.stop(t+0.3);sub.stop(t+0.2);cl.stop(t+0.008);
+  }else if(rid==='darbuka'){
+    // Darbuka — doum (low body hit) vs tek/ka (high rim hit)
+    // Step position determines hit type: steps 0,8 = doum, others = tek/ka
+    const isDoum=step%8===0;
+    if(isDoum){
+      // Doum — deep body hit: sine pitch drop with bandpass resonance
+      const d=c.createOscillator();d.type='sine';
+      d.frequency.setValueAtTime(180,t);d.frequency.exponentialRampToValueAtTime(80,t+0.04);
+      const bp=c.createBiquadFilter();bp.type='peaking';bp.frequency.value=120;bp.Q.value=3;bp.gain.value=6;
+      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.55,t+0.002);
+      e.gain.setTargetAtTime(0.001,t+0.002,0.06);
+      d.connect(bp);bp.connect(e);e.connect(o);d.start(t);d.stop(t+0.15);
+    }else{
+      // Tek/Ka — sharp rim hit: highpassed noise + sine ping
+      const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
+      const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=2500;
+      const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=4000+Math.random()*1000;bp.Q.value=6;
+      const e=c.createGain();e.gain.setValueAtTime(vel*0.3,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.02);
+      src.connect(hp);hp.connect(bp);bp.connect(e);e.connect(o);src.start(t);src.stop(t+0.04);
+      // Rim ping
+      const p=c.createOscillator();p.type='sine';p.frequency.value=800+Math.random()*200;
+      const pe=c.createGain();pe.gain.setValueAtTime(vel*0.12,t);pe.gain.exponentialRampToValueAtTime(0.001,t+0.015);
+      p.connect(pe);pe.connect(o);p.start(t);p.stop(t+0.02);
+    }
+  }else if(rid==='acid'){
+    // Maqam — Hijaz acid line: MS-20 style squelching resonant filter on saw
+    // Uses persistent oscillator like Vitus acid, but locked to Hijaz scale
+    const acidO=v._acidOsc||(()=>{const oo=c.createOscillator();oo.type='sawtooth';return oo;})();
+    if(!v._acidOsc){
+      const lp=c.createBiquadFilter();lp.type='lowpass';lp.Q.value=22;// MS-20 resonance — extreme
+      const e=c.createGain();
+      acidO.connect(lp);lp.connect(e);e.connect(o);
+      acidO.start(t);
+      v._acidOsc=acidO;v._acidLp=lp;v._acidGain=e;
+    }
+    const lp=v._acidLp,e=v._acidGain;
+    const decayT=acc?0.3:0.16;
+    const peakCut=hz*(acc?10:6);
+    if(!slide){
+      e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.38,t+0.002);
+      e.gain.setTargetAtTime(vel*0.15,t+0.002,dur*0.3);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.2);
+      lp.frequency.setValueAtTime(Math.max(peakCut,100),t);
+      lp.frequency.exponentialRampToValueAtTime(Math.max(hz*0.8,100),t+decayT);
+      acidO.frequency.setValueAtTime(hz,t);
+    }else{
+      acidO.frequency.setTargetAtTime(hz,t,0.06);
+    }
+  }else if(rid==='drone'){
+    // Turris — the stone tower drone: detuned sub sines with slow beating
+    const s1=c.createOscillator();s1.type='sine';s1.frequency.value=hz*0.5;
+    const s2=c.createOscillator();s2.type='sine';s2.frequency.value=hz*0.5+0.5;// 0.5Hz beating
+    const s3=c.createOscillator();s3.type='triangle';s3.frequency.value=hz*0.25;// deep sub octave
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=200;lp.Q.value=2;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.35,t+0.1);
+    e.gain.setTargetAtTime(vel*0.25,t+0.1,dur*1.5);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*4);
+    s1.connect(lp);s2.connect(lp);s3.connect(lp);lp.connect(e);e.connect(o);
+    s1.start(t);s2.start(t);s3.start(t);s1.stop(t+dur*4.1);s2.stop(t+dur*4.1);s3.stop(t+dur*4.1);
+  }else if(rid==='lightning'){
+    // Fulmen — lightning strike: explosive noise burst with resonant ring-down
+    const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
+    // Aggressive bandpass for "crack" character
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=6000;bp.Q.value=2;
+    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=1000;
+    // Lightning ring — high sine that decays like a struck wire
+    const ring=c.createOscillator();ring.type='sine';ring.frequency.value=3800+Math.random()*2000;
+    const ringE=c.createGain();ringE.gain.setValueAtTime(vel*0.15,t);ringE.gain.exponentialRampToValueAtTime(0.001,t+0.08);
+    ring.connect(ringE);ringE.connect(o);
+    // Main crack
+    const e=c.createGain();e.gain.setValueAtTime(vel*0.45,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.03);
+    src.connect(hp);hp.connect(bp);bp.connect(e);e.connect(o);
+    src.start(t);ring.start(t);src.stop(t+0.05);ring.stop(t+0.1);
+  }else if(rid==='fill'){
+    // Sagitta — rapid-fire darbuka rim fills: very short, high, metallic
+    const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=5000+Math.random()*2000;bp.Q.value=8;
+    const e=c.createGain();e.gain.setValueAtTime(vel*0.22,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.012);
+    src.connect(bp);bp.connect(e);e.connect(o);src.start(t);src.stop(t+0.02);
+  }else if(rid==='chain'){
+    // Catena — chain rattle: metallic sine cluster with fast tremolo
+    const freqs=[hz*6,hz*6*1.414,hz*6*1.732];// inharmonic metal partials
+    const trem=c.createOscillator();trem.type='sine';trem.frequency.value=12;// fast tremolo
+    freqs.forEach(f=>{
+      const s=c.createOscillator();s.type='sine';s.frequency.value=f;
+      const tg=c.createGain();tg.gain.value=0;trem.connect(tg.gain);// AM tremolo
+      const e=c.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel*0.08,t+0.005);
+      e.gain.exponentialRampToValueAtTime(0.001,t+dur*1.5);
+      s.connect(tg);tg.connect(e);e.connect(o);s.start(t);s.stop(t+dur*1.6);
+    });
+    trem.start(t);trem.stop(t+dur*1.6);
+  }else if(rid==='sweep'){
+    // Ignis — rising bandpass scream: noise through sweeping resonant filter
+    const src=c.createBufferSource();src.buffer=getWhiteNoise(c);
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.Q.value=15;// sharp resonance
+    bp.frequency.setValueAtTime(200,t);bp.frequency.exponentialRampToValueAtTime(8000,t+dur*3);
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=10000;
+    const e=c.createGain();e.gain.setValueAtTime(0,t);
+    e.gain.linearRampToValueAtTime(vel*0.3,t+dur*1.5);
+    e.gain.exponentialRampToValueAtTime(0.001,t+dur*3);
+    src.connect(bp);bp.connect(lp);lp.connect(e);e.connect(o);src.start(t);src.stop(t+dur*3+0.02);
+  }else{
+    // Quantizer modifier fallback — distorted square burst
+    const s=c.createOscillator();s.type='square';s.frequency.value=hz;
+    const ws=c.createWaveShaper();const curve=new Float32Array(256);
+    for(let i=0;i<256;i++){const x=(i/128)-1;curve[i]=Math.tanh(x*6);}ws.curve=curve;
+    const e=c.createGain();e.gain.setValueAtTime(vel*0.2,t);e.gain.exponentialRampToValueAtTime(0.001,t+0.025);
+    s.connect(ws);ws.connect(e);e.connect(o);s.start(t);s.stop(t+0.03);
+  }
+}
 
 const SYNTH_FNS={
   bartholomew:synthBarth,
@@ -3694,6 +3882,7 @@ const SYNTH_FNS={
   symeon:synthSymeon,
   paprika:synthPaprika,
   robin:synthRobin,
+  barbara:synthBarbara,
 };
 
 // ══════ POLYRHYTHMIC LFO LIFECYCLE ══════
